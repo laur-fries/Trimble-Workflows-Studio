@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+@font-face {
+  font-family: 'modus-icons';
+  src: url('/modus-web-components/fonts/modus-icons-outlined.woff2') format('woff2');
+  font-display: block;
+  font-style: normal;
+  font-weight: normal;
+}
+.test-icon {
+  font-family: 'modus-icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
+}
+</style>
+</head>
+<body>
+<h1>Modus Icons Font Test</h1>
+<p>If icons render below, the font supports ligatures:</p>
+<p class="test-icon">home</p>
+<p class="test-icon">settings</p>
+<p class="test-icon">search</p>
+<p class="test-icon">folder_closed</p>
+<p class="test-icon">expand_more</p>
+<p class="test-icon">arrow_left</p>
+<p class="test-icon">notifications</p>
+<hr>
+<p>If you see words above instead of icons, the font doesn't support ligatures.</p>
+</body>
+</html>

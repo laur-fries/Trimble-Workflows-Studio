@@ -1,0 +1,30 @@
+modus-wc-icon i,
+i.modus-wc-icon,
+i.modus-icons,
+i.modus-icons-outlined,
+i.modus-icons-solid,
+.modus-icons,
+.modus-icons-outlined,
+.modus-icons-solid {
+  font-family: 'modus-icons' !important;
+  font-weight: normal !important;
+  font-style: normal !important;
+  font-feature-settings: 'liga' !important;
+  -webkit-font-feature-settings: 'liga' !important;
+  text-transform: none !important;
+  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: normal !important;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  line-height: 1;
+  display: inline-block;
+}
+
+i.modus-icons-solid,
+i.modus-wc-icon.modus-icons-solid,
+modus-wc-icon i.modus-icons-solid {
+  font-family: 'modus-icons-solid' !important;
+}

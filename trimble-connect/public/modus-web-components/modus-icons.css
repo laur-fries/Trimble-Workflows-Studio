@@ -1,0 +1,54 @@
+@font-face {
+  font-family: 'modus-icons';
+  src: url('/modus-web-components/fonts/modus-icons-outlined.woff2') format('woff2');
+  font-style: normal;
+  font-weight: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'modus-icons-outlined';
+  src: url('/modus-web-components/fonts/modus-icons-outlined.woff2') format('woff2');
+  font-style: normal;
+  font-weight: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'modus-icons-solid';
+  src: url('/modus-web-components/fonts/modus-icons-solid.woff2') format('woff2');
+  font-style: normal;
+  font-weight: normal;
+  font-display: block;
+}
+
+.modus-icons,
+.modus-icons-outlined,
+.modus-icons-solid {
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
+}
+
+.modus-icons {
+  font-family: 'modus-icons';
+}
+
+.modus-icons-outlined {
+  font-family: 'modus-icons-outlined';
+}
+
+.modus-icons-solid {
+  font-family: 'modus-icons-solid';
+}

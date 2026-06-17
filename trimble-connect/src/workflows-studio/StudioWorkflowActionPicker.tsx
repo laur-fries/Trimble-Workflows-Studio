@@ -4,17 +4,23 @@ import {
   ModusWcButton,
   ModusWcChip,
   ModusWcCollapse,
-  ModusWcDivider,
+  ModusWcDropdownMenu,
   ModusWcIcon,
+  ModusWcMenuItem,
   ModusWcTextInput,
 } from '@trimble-oss/moduswebcomponents-react';
 import type { WorkflowActionCategory, WorkflowActionItem } from './data';
 import { setActionDragData } from './starterDrag';
-import { getAllWorkflowActionCategories } from './workflowActionLibrary';
+import {
+  getGroupedWorkflowActionCategories,
+  workflowGroupByOptions,
+  type WorkflowGroupBy,
+} from './workflowActionLibrary';
 
 interface StudioWorkflowActionPickerProps {
   className?: string;
   includeSearch?: boolean;
+  instanceId?: string;
   searchQuery?: string;
   selectedActionId?: string | null;
   onSearchChange?: (query: string) => void;
@@ -38,6 +44,9 @@ function filterActionCategories(
           item.label,
           item.description,
           item.provider,
+          item.category,
+          item.fileType,
+          item.action,
           item.specTag,
           item.version,
           ...(item.tags ?? []),
@@ -55,6 +64,16 @@ function createDefaultExpandedState(categories: WorkflowActionCategory[]) {
   return Object.fromEntries(
     categories.map((category) => [category.id, category.defaultExpanded ?? false]),
   );
+}
+
+function closeDropdownMenu(event: CustomEvent<{ value: string }>) {
+  const menuItem = event.target as HTMLElement | null;
+  const dropdown = menuItem?.closest('modus-wc-dropdown-menu') as
+    | (HTMLElement & { menuVisible?: boolean })
+    | null;
+  if (dropdown) {
+    dropdown.menuVisible = false;
+  }
 }
 
 function ActionLibraryItem({
@@ -155,12 +174,14 @@ function ActionLibraryItem({
 
 function ActionCategoryCollapse({
   category,
+  collapseId,
   expanded,
   selectedActionId,
   onExpandedChange,
   onSelectAction,
 }: {
   category: WorkflowActionCategory;
+  collapseId: string;
   expanded: boolean;
   selectedActionId?: string | null;
   onExpandedChange: (expanded: boolean) => void;
@@ -169,7 +190,7 @@ function ActionCategoryCollapse({
   return (
     <ModusWcCollapse
       bordered={false}
-      collapseId={`studio-action-category-${category.id}`}
+      collapseId={collapseId}
       customClass="studio-canvas-category-collapse"
       expanded={expanded}
       onExpandedChange={(event) => onExpandedChange(event.detail.expanded)}
@@ -204,26 +225,46 @@ function ActionCategoryCollapse({
 export default function StudioWorkflowActionPicker({
   className = '',
   includeSearch = false,
+  instanceId = 'default',
   searchQuery: controlledSearchQuery,
   selectedActionId = null,
   onSearchChange,
   onSelectAction,
 }: StudioWorkflowActionPickerProps) {
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
-  const allActionCategories = useMemo(() => getAllWorkflowActionCategories(), []);
+  const [groupBy, setGroupBy] = useState<WorkflowGroupBy>('category');
+  const selectedGroupLabel =
+    workflowGroupByOptions.find((option) => option.value === groupBy)?.label ?? 'Category';
+  const groupedCategories = useMemo(
+    () => getGroupedWorkflowActionCategories(groupBy),
+    [groupBy],
+  );
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() =>
-    createDefaultExpandedState(getAllWorkflowActionCategories()),
+    createDefaultExpandedState(getGroupedWorkflowActionCategories('category')),
   );
 
   const searchQuery = controlledSearchQuery ?? internalSearchQuery;
   const filteredCategories = useMemo(
-    () => filterActionCategories(allActionCategories, searchQuery),
-    [allActionCategories, searchQuery],
+    () => filterActionCategories(groupedCategories, searchQuery),
+    [groupedCategories, searchQuery],
   );
   const hasExpandedCategory = useMemo(
     () => filteredCategories.some((category) => expandedCategories[category.id]),
     [expandedCategories, filteredCategories],
   );
+
+  const handleGroupBySelect = (nextGroupBy: WorkflowGroupBy) => {
+    if (nextGroupBy === groupBy) {
+      return;
+    }
+
+    setGroupBy(nextGroupBy);
+    setExpandedCategories(
+      Object.fromEntries(
+        getGroupedWorkflowActionCategories(nextGroupBy).map((category) => [category.id, false]),
+      ),
+    );
+  };
 
   const handleSearchChange = (query: string) => {
     if (onSearchChange) {
@@ -257,33 +298,72 @@ export default function StudioWorkflowActionPicker({
       )}
 
       <div className="studio-workflow-action-picker-controls">
-        <ModusWcButton
-          color="primary"
-          customClass="studio-canvas-expand-all"
-          onButtonClick={() => setAllCategoriesExpanded(true)}
-          size="sm"
-          variant="borderless"
-        >
-          Expand all
-        </ModusWcButton>
-        <ModusWcDivider customClass="studio-canvas-control-divider" orientation="vertical" />
-        <ModusWcButton
-          color="tertiary"
-          customClass="studio-canvas-collapse-all"
-          disabled={!hasExpandedCategory}
-          onButtonClick={() => setAllCategoriesExpanded(false)}
-          size="sm"
-          variant="borderless"
-        >
-          Collapse all
-        </ModusWcButton>
+        <div className="studio-workflow-action-picker-control-links">
+          <ModusWcButton
+            color="primary"
+            customClass="studio-canvas-expand-all"
+            onButtonClick={() => setAllCategoriesExpanded(true)}
+            size="sm"
+            variant="borderless"
+          >
+            Expand all
+          </ModusWcButton>
+          <span className="studio-canvas-control-separator" aria-hidden="true">
+            |
+          </span>
+          <ModusWcButton
+            color="primary"
+            customClass="studio-canvas-collapse-all"
+            disabled={!hasExpandedCategory}
+            onButtonClick={() => setAllCategoriesExpanded(false)}
+            size="sm"
+            variant="borderless"
+          >
+            Collapse all
+          </ModusWcButton>
+        </div>
+
+        <div className="studio-canvas-group-by-dropdown">
+          <ModusWcDropdownMenu
+            buttonVariant="outlined"
+            buttonSize="sm"
+            buttonAriaLabel="Group workflow steps"
+            menuPlacement="bottom-start"
+            menuBordered
+            customClass="studio-canvas-group-by-menu"
+          >
+            <span slot="button" className="studio-canvas-group-by-button">
+              Group by: {selectedGroupLabel}
+              <ModusWcIcon decorative name="caret_down" size="sm" />
+            </span>
+            <div slot="menu">
+              {workflowGroupByOptions.map((option) => (
+                <ModusWcMenuItem
+                  key={option.value}
+                  label={option.label}
+                  value={option.value}
+                  onItemSelect={(event) => {
+                    closeDropdownMenu(event);
+                    if (option.value !== groupBy) {
+                      handleGroupBySelect(option.value);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          </ModusWcDropdownMenu>
+        </div>
       </div>
 
-      <ModusWcAccordion customClass="studio-canvas-categories-accordion">
+      <ModusWcAccordion
+        key={`studio-action-groups-${instanceId}-${groupBy}`}
+        customClass="studio-canvas-categories-accordion"
+      >
         {filteredCategories.map((category) => (
           <ActionCategoryCollapse
             key={category.id}
             category={category}
+            collapseId={`studio-action-category-${instanceId}-${category.id}`}
             expanded={expandedCategories[category.id] ?? false}
             selectedActionId={selectedActionId}
             onExpandedChange={(expanded) =>

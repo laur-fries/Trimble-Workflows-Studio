@@ -4,11 +4,14 @@ import {
   ModusWcButton,
   ModusWcChip,
   ModusWcCollapse,
-  ModusWcDivider,
   ModusWcIcon,
   ModusWcTextInput,
 } from '@trimble-oss/moduswebcomponents-react';
-import { workflowStarterGroups, type OperationItem, type WorkflowStarterGroup } from './data';
+import {
+  workflowStarterGroups,
+  type WorkflowStarterGroup,
+  type WorkflowStarterItem,
+} from './data';
 import { setStarterDragData } from './starterDrag';
 
 interface StudioStarterPickerProps {
@@ -17,7 +20,7 @@ interface StudioStarterPickerProps {
   searchQuery?: string;
   selectedStarterId?: string | null;
   onSearchChange?: (query: string) => void;
-  onSelectStarter?: (item: OperationItem) => void;
+  onSelectStarter?: (item: WorkflowStarterItem) => void;
 }
 
 function filterStarterGroups(groups: WorkflowStarterGroup[], query: string): WorkflowStarterGroup[] {
@@ -29,7 +32,13 @@ function filterStarterGroups(groups: WorkflowStarterGroup[], query: string): Wor
   return groups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => item.label.toLowerCase().includes(normalizedQuery)),
+      items: group.items.filter((item) => {
+        const haystack = [item.label, item.connector, group.label]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(normalizedQuery);
+      }),
     }))
     .filter((group) => group.items.length > 0);
 }
@@ -39,16 +48,17 @@ function StarterStepOption({
   isSelected,
   onSelect,
 }: {
-  item: OperationItem;
+  item: WorkflowStarterItem;
   isSelected: boolean;
-  onSelect: (item: OperationItem) => void;
+  onSelect: (item: WorkflowStarterItem) => void;
 }) {
   const didDragRef = useRef(false);
 
   return (
-    <button
-      type="button"
+    <div
       className={`studio-canvas-action-card studio-canvas-starter-option${isSelected ? ' is-selected' : ''}`}
+      role="button"
+      tabIndex={0}
       aria-pressed={isSelected}
       draggable
       onClick={() => {
@@ -58,6 +68,12 @@ function StarterStepOption({
         }
         onSelect(item);
       }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect(item);
+        }
+      }}
       onDragEnd={() => {
         didDragRef.current = false;
       }}
@@ -66,14 +82,18 @@ function StarterStepOption({
         setStarterDragData(event, item.id);
       }}
     >
-      <div className="studio-canvas-action-card-header">
+      <div className="studio-canvas-starter-option-header">
+        <span className="studio-canvas-starter-option-icon" aria-hidden="true">
+          <ModusWcIcon decorative name={item.icon} size="sm" variant="solid" />
+        </span>
         <span className="studio-canvas-action-card-title">{item.label}</span>
       </div>
-      <div className="studio-canvas-action-card-body">
-        <p className="studio-canvas-starter-option-meta">
-          <ModusWcIcon decorative name={item.icon} size="sm" variant="solid" />
-          Start trigger
-        </p>
+
+      {item.connector && (
+        <p className="studio-canvas-starter-option-via">via {item.connector}</p>
+      )}
+
+      <div className="studio-canvas-action-card-body studio-canvas-starter-option-drag-row">
         <ModusWcIcon
           decorative
           name="drag_indicator"
@@ -81,7 +101,7 @@ function StarterStepOption({
           customClass="studio-canvas-action-card-drag"
         />
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -96,7 +116,7 @@ function StarterGroupCollapse({
   expanded: boolean;
   selectedStarterId?: string | null;
   onExpandedChange: (expanded: boolean) => void;
-  onSelectStarter?: (item: OperationItem) => void;
+  onSelectStarter?: (item: WorkflowStarterItem) => void;
 }) {
   return (
     <ModusWcCollapse
@@ -118,14 +138,17 @@ function StarterGroupCollapse({
         </ModusWcChip>
       </div>
       <div slot="content" className="studio-canvas-category-content studio-canvas-category-content--actions">
-        <div className="studio-canvas-category-steps studio-canvas-starter-group-content" aria-label={`${group.label} steps`}>
+        <div
+          className="studio-canvas-category-steps studio-canvas-starter-group-content"
+          aria-label={`${group.label} triggers`}
+        >
           {group.items.map((item) => (
             <StarterStepOption
-            key={item.id}
-            item={item}
-            isSelected={selectedStarterId === item.id}
-            onSelect={(starter) => onSelectStarter?.(starter)}
-          />
+              key={item.id}
+              item={item}
+              isSelected={selectedStarterId === item.id}
+              onSelect={(starter) => onSelectStarter?.(starter)}
+            />
           ))}
         </div>
       </div>
@@ -143,7 +166,9 @@ export default function StudioStarterPicker({
 }: StudioStarterPickerProps) {
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
   const [expandedStarterGroups, setExpandedStarterGroups] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(workflowStarterGroups.map((group) => [group.id, true])),
+    Object.fromEntries(
+      workflowStarterGroups.map((group) => [group.id, group.defaultExpanded ?? true]),
+    ),
   );
 
   const searchQuery = controlledSearchQuery ?? internalSearchQuery;
@@ -151,8 +176,21 @@ export default function StudioStarterPicker({
     () => filterStarterGroups(workflowStarterGroups, searchQuery),
     [searchQuery],
   );
-  const hasExpandedGroup = useMemo(
-    () => filteredStarterGroups.some((group) => expandedStarterGroups[group.id]),
+
+  const isStarterGroupExpanded = (group: WorkflowStarterGroup) =>
+    expandedStarterGroups[group.id] ?? group.defaultExpanded ?? true;
+
+  const allStarterGroupsExpanded = useMemo(
+    () =>
+      filteredStarterGroups.length > 0 &&
+      filteredStarterGroups.every((group) => isStarterGroupExpanded(group)),
+    [expandedStarterGroups, filteredStarterGroups],
+  );
+
+  const allStarterGroupsCollapsed = useMemo(
+    () =>
+      filteredStarterGroups.length > 0 &&
+      filteredStarterGroups.every((group) => !isStarterGroupExpanded(group)),
     [expandedStarterGroups, filteredStarterGroups],
   );
 
@@ -187,21 +225,24 @@ export default function StudioStarterPicker({
         </div>
       )}
 
-      <div className="studio-workflow-action-picker-controls">
+      <div className="studio-workflow-action-picker-control-links">
         <ModusWcButton
           color="primary"
           customClass="studio-canvas-expand-all"
+          disabled={allStarterGroupsExpanded}
           onButtonClick={() => setAllGroupsExpanded(true)}
           size="sm"
           variant="borderless"
         >
           Expand all
         </ModusWcButton>
-        <ModusWcDivider customClass="studio-canvas-control-divider" orientation="vertical" />
+        <span className="studio-canvas-control-separator" aria-hidden="true">
+          |
+        </span>
         <ModusWcButton
-          color="tertiary"
+          color="primary"
           customClass="studio-canvas-collapse-all"
-          disabled={!hasExpandedGroup}
+          disabled={allStarterGroupsCollapsed}
           onButtonClick={() => setAllGroupsExpanded(false)}
           size="sm"
           variant="borderless"
@@ -215,7 +256,7 @@ export default function StudioStarterPicker({
           <StarterGroupCollapse
             key={group.id}
             group={group}
-            expanded={expandedStarterGroups[group.id] ?? true}
+            expanded={expandedStarterGroups[group.id] ?? group.defaultExpanded ?? true}
             selectedStarterId={selectedStarterId}
             onExpandedChange={(expanded) =>
               setExpandedStarterGroups((current) => ({ ...current, [group.id]: expanded }))

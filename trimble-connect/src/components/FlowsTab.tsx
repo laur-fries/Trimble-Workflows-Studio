@@ -14,6 +14,7 @@ interface FlowsTabProps {
   getFlowTitle: (flow: DiscoverFlow, instanceId?: string) => string;
   onBrowseTemplates: () => void;
   onFlowAction: (instanceId: string, action: FlowMenuAction) => void;
+  onFlowSelect: (instanceId: string) => void;
 }
 
 const flowMenuItems: { action: FlowMenuAction; label: string }[] = [
@@ -45,6 +46,7 @@ export default function FlowsTab({
   getFlowTitle,
   onBrowseTemplates,
   onFlowAction,
+  onFlowSelect,
 }: FlowsTabProps) {
   const activeFlows = activeFlowIds
     .map((instanceId) => {
@@ -66,23 +68,34 @@ export default function FlowsTab({
       <div className="workflows-active-flow-list">
         {activeFlows.map(({ instanceId, flow }) => (
           <article key={instanceId} className="workflows-active-flow-card">
-            <div className="workflows-active-flow-icons" aria-hidden="true">
-              {flow.icons.map((icon) => (
-                <span key={icon} className="workflows-active-flow-icon">
-                  <ModusWcIcon decorative name={icon} size="sm" />
-                </span>
-              ))}
-            </div>
+            <button
+              type="button"
+              className="workflows-active-flow-card-select"
+              onClick={() => onFlowSelect(instanceId)}
+            >
+              <div className="workflows-active-flow-icons" aria-hidden="true">
+                {flow.icons.map((icon) => (
+                  <span key={icon} className="workflows-active-flow-icon">
+                    <ModusWcIcon decorative name={icon} size="sm" />
+                  </span>
+                ))}
+              </div>
 
-            <div className="workflows-active-flow-content">
-              <h3 className="workflows-active-flow-title">{getFlowTitle(flow, instanceId)}</h3>
-              <p className="workflows-active-flow-status">
-                <span className="workflows-active-flow-status-dot" aria-hidden="true" />
-                Active
-              </p>
-            </div>
+              <div className="workflows-active-flow-content">
+                <h3 className="workflows-active-flow-title">{getFlowTitle(flow, instanceId)}</h3>
+                <p className="workflows-active-flow-status">
+                  <span className="workflows-active-flow-status-dot" aria-hidden="true" />
+                  Active
+                </p>
+              </div>
+            </button>
 
-            <ModusWcDropdownMenu
+            <div
+              className="workflows-active-flow-menu"
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              <ModusWcDropdownMenu
               buttonVariant="borderless"
               buttonSize="sm"
               buttonAriaLabel={`More actions for ${getFlowTitle(flow, instanceId)}`}
@@ -99,12 +112,17 @@ export default function FlowsTab({
                     value={item.action}
                     onItemSelect={(event) => {
                       closeDropdownMenu(event);
+                      if (item.action === 'edit') {
+                        onFlowSelect(instanceId);
+                        return;
+                      }
                       onFlowAction(instanceId, item.action);
                     }}
                   />
                 ))}
               </div>
             </ModusWcDropdownMenu>
+            </div>
           </article>
         ))}
       </div>

@@ -1,14 +1,19 @@
-import { useRef, useState } from 'react';
-import { ModusWcIcon } from '@trimble-oss/moduswebcomponents-react';
-import WorkflowsPrimaryButton from '../components/WorkflowsPrimaryButton';
+import { useEffect, useState } from 'react';
+import {
+  ModusWcTextInput,
+} from '@trimble-oss/moduswebcomponents-react';
+import StudioAiDisclaimer from './StudioAiDisclaimer';
+import StudioAiStarsIcon from './StudioAiStarsIcon';
+import StudioMagicWandIcon from './StudioMagicWandIcon';
 
 interface StudioAssistantPromptProps {
   onCreate: (task: string) => void;
 }
 
+const ASSISTANT_INPUT_ID = 'studio-assistant-task';
+
 export default function StudioAssistantPrompt({ onCreate }: StudioAssistantPromptProps) {
   const [task, setTask] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
     const trimmed = task.trim();
@@ -18,56 +23,62 @@ export default function StudioAssistantPrompt({ onCreate }: StudioAssistantPromp
     onCreate(trimmed);
   };
 
-  const focusInput = () => {
-    inputRef.current?.focus();
-  };
+  useEffect(() => {
+    const input = document.getElementById(ASSISTANT_INPUT_ID) as HTMLInputElement | null;
+    if (!input) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter') {
+        return;
+      }
+
+      event.preventDefault();
+      const trimmed = input.value.trim();
+      if (trimmed) {
+        onCreate(trimmed);
+      }
+    };
+
+    input.addEventListener('keydown', handleKeyDown);
+    return () => input.removeEventListener('keydown', handleKeyDown);
+  }, [onCreate]);
 
   return (
     <section className="studio-assistant-hero" aria-label="Trimble Assistant">
       <div className="studio-assistant-hero-content">
         <h2 className="studio-assistant-hero-title">
-          Automate your work with{' '}
-          <span className="studio-assistant-hero-title-accent">Trimble Workflows</span>
+          What process would you like to automate today?
         </h2>
-        <p className="studio-assistant-hero-subtitle">
-          Describe a task for Trimble Assistant to help you build a workflow.
-        </p>
 
         <div className="studio-assistant-nudge">
-          <div
-            className="studio-assistant-nudge-inner"
-            onClick={(event) => {
-              const target = event.target as HTMLElement;
-              if (!target.closest('button')) {
-                focusInput();
-              }
-            }}
-          >
-            <span className="studio-assistant-nudge-icon" aria-hidden="true">
-              <ModusWcIcon decorative name="ai_stars" size="md" variant="solid" />
-            </span>
-
-            <input
-              ref={inputRef}
-              type="text"
-              className="studio-assistant-nudge-input"
-              placeholder="Describe a task for Trimble Assistant"
-              aria-label="Describe a task for Trimble Assistant"
+          <div className="studio-assistant-nudge-inner">
+            <ModusWcTextInput
+              bordered={false}
+              customClass="studio-assistant-prompt-input"
+              enterkeyhint="go"
+              inputId={ASSISTANT_INPUT_ID}
+              placeholder="Describe a task to automate"
+              size="md"
               value={task}
-              onChange={(event) => setTask(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  handleSubmit();
-                }
+              onInputChange={(event: CustomEvent) => {
+                setTask(event.detail?.target?.value || '');
               }}
-            />
+            >
+              <span slot="custom-icon" className="studio-assistant-prompt-icon-wrap">
+                <StudioMagicWandIcon className="studio-assistant-prompt-icon" />
+              </span>
+            </ModusWcTextInput>
 
-            <WorkflowsPrimaryButton onClick={handleSubmit} disabled={!task.trim()}>
-              <ModusWcIcon decorative name="ai_stars" size="sm" variant="solid" />
-              Create
-            </WorkflowsPrimaryButton>
+            <button type="button" className="studio-assistant-generate-btn" onClick={handleSubmit}>
+              <StudioAiStarsIcon className="studio-assistant-generate-btn-icon" />
+              Generate workflow
+            </button>
           </div>
         </div>
+
+        <StudioAiDisclaimer />
       </div>
     </section>
   );

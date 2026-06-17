@@ -3,7 +3,7 @@ import { StudioHeader } from './StudioShell';
 import StudioSideNav from './StudioSideNav';
 import StudioDashboard from './StudioDashboard';
 import StudioMyWorkflows from './StudioMyWorkflows';
-import StudioCanvas from './StudioCanvas';
+import StudioCanvas, { type StudioCanvasMode } from './StudioCanvas';
 import type { StudioTemplate, StudioView, StudioViewportMode, StudioWorkspaceTab } from './data';
 import './WorkflowsStudio.css';
 
@@ -13,10 +13,11 @@ interface WorkflowsStudioAppProps {
 }
 
 export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }: WorkflowsStudioAppProps) {
-  const [sideNavExpanded, setSideNavExpanded] = useState(true);
+  const [sideNavExpanded, setSideNavExpanded] = useState(false);
   const [workspaceTab, setWorkspaceTab] = useState<StudioWorkspaceTab>('discover');
   const [view, setView] = useState<StudioView>(initialMode === 'canvas' ? 'canvas' : 'discover');
   const [selectedTemplate, setSelectedTemplate] = useState<StudioTemplate | null>(null);
+  const [canvasMode, setCanvasMode] = useState<StudioCanvasMode>('edit');
   const [highlightStartNode, setHighlightStartNode] = useState(initialMode === 'canvas');
   const [assistantPrompt, setAssistantPrompt] = useState('');
 
@@ -24,6 +25,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
     setWorkspaceTab(tab);
     setView(tab);
     setSelectedTemplate(null);
+    setCanvasMode('edit');
     setHighlightStartNode(false);
     setAssistantPrompt('');
   };
@@ -32,6 +34,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
     setSelectedTemplate(null);
     setAssistantPrompt('');
     setHighlightStartNode(true);
+    setCanvasMode('edit');
     setView('canvas');
   };
 
@@ -39,6 +42,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
     setSelectedTemplate(null);
     setAssistantPrompt(task);
     setHighlightStartNode(true);
+    setCanvasMode('edit');
     setView('canvas');
   };
 
@@ -46,6 +50,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
     setSelectedTemplate(template);
     setAssistantPrompt('');
     setHighlightStartNode(false);
+    setCanvasMode('edit');
     setView('canvas');
   };
 
@@ -53,6 +58,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
     setView('discover');
     setWorkspaceTab('discover');
     setSelectedTemplate(null);
+    setCanvasMode('edit');
     setHighlightStartNode(false);
     setAssistantPrompt('');
   };
@@ -64,6 +70,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
           template={selectedTemplate}
           highlightStartNode={highlightStartNode}
           assistantPrompt={assistantPrompt}
+          canvasMode={canvasMode}
           onBack={handleBackFromCanvas}
         />
       );

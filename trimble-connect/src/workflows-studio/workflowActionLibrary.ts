@@ -1,253 +1,233 @@
-import type { WorkflowActionCategory, WorkflowActionContext } from './data';
+import type { WorkflowActionCategory, WorkflowActionContext, WorkflowActionItem } from './data';
 
-export const workflowContextOptions = [
-  { label: 'Project Management Context', value: 'project-management' as const },
-  { label: 'Data Engineering Context', value: 'data-engineering' as const },
-];
+export const workflowGroupByOptions = [
+  { label: 'Trimble product', value: 'provider' },
+  { label: 'Category', value: 'category' },
+  { label: 'File Type', value: 'fileType' },
+  { label: 'Action', value: 'action' },
+] as const;
 
-export const projectManagementActionLibrary: WorkflowActionCategory[] = [
-  {
-    id: 'projectsight-actions',
-    label: 'ProjectSight Actions',
-    context: 'project-management',
-    defaultExpanded: false,
-    items: [
-      {
-        id: 'pm-create-project-space',
-        label: 'Create Project Space',
-        icon: 'folder_closed',
-        description:
-          'Generate a new permission-based project hub natively inside ProjectSight and route collaborators to the right workspace.',
-        provider: 'ProjectSight',
-        specTag: 'Project setup',
-        verified: true,
-        version: 'v2',
-      },
-      {
-        id: 'pm-create-rfi',
-        label: 'Create RFI',
-        icon: 'collaboration',
-        description:
-          'Create an automated RFI field routing layout and assign reviewers based on project rules.',
-        provider: 'ProjectSight',
-        specTag: 'RFI workflow',
-        verified: true,
-        version: 'v3',
-      },
-      {
-        id: 'pm-create-issue-card',
-        label: 'Create Issue Card',
-        icon: 'report',
-        description:
-          'Log a punch list issue directly to ProjectSight tables with status, assignee, and due date fields.',
-        provider: 'ProjectSight',
-        specTag: 'Issue tracking',
-        verified: true,
-        version: 'v2',
-      },
-    ],
-  },
-  {
-    id: 'communications-notifications',
-    label: 'Communications & Notifications',
-    context: 'project-management',
-    defaultExpanded: false,
-    items: [
-      {
-        id: 'pm-send-email',
-        label: 'Send Automated Email Notification',
-        icon: 'email',
-        description:
-          'Dispatch custom template alerts to targeted user groups when workflow events occur in your project.',
-        provider: 'Trimble Connect',
-        specTag: 'Email alerts',
-        verified: true,
-        version: 'v3',
-      },
-      {
-        id: 'pm-slack-alert',
-        label: 'Post Slack Channel Alert',
-        icon: 'notifications',
-        description:
-          'Ingest real-time event alerts straight to Slack workspaces with formatted workflow context.',
-        provider: 'Slack',
-        specTag: 'Channel post',
-        verified: true,
-        version: 'v1',
-      },
-      {
-        id: 'pm-teams-message',
-        label: 'Send Microsoft Teams Message',
-        icon: 'chat',
-        description:
-          'Route direct message pings to internal teams when project milestones or issues change state.',
-        provider: 'Microsoft Teams',
-        specTag: 'Direct message',
-        verified: true,
-        version: 'v1',
-      },
-    ],
-  },
-];
+export type WorkflowGroupBy = (typeof workflowGroupByOptions)[number]['value'];
 
-export const dataEngineeringActionLibrary: WorkflowActionCategory[] = [
+export function isWorkflowGroupBy(value: string): value is WorkflowGroupBy {
+  return workflowGroupByOptions.some((option) => option.value === value);
+}
+
+/** GA Beta Operation Library — master step catalog for canvas grouping. */
+export const gaBetaOperationLibrary: WorkflowActionItem[] = [
   {
-    id: 'connect-cde-tools',
-    label: 'Trimble Connect CDE Tools',
-    context: 'data-engineering',
-    defaultExpanded: false,
-    items: [
-      {
-        id: 'de-read-file-connect',
-        label: 'Read File From Trimble Connect',
-        icon: 'file',
-        description:
-          'Read files from Trimble Connect folders and pass them to downstream workflow steps for processing or conversion.',
-        provider: 'Trimble Connect',
-        specTag: 'MAX 500MB',
-        tags: ['Integration', 'Connectivity', 'Connect', 'Read'],
-        verified: true,
-        version: 'v3',
-      },
-      {
-        id: 'de-read-folder-connect',
-        label: 'Read Folder From Trimble Connect',
-        icon: 'folder_closed',
-        description:
-          'Ingest bulk directory folder paths from Trimble Connect and enumerate files for batch workflow operations.',
-        provider: 'Trimble Connect',
-        specTag: 'Folder ingest',
-        tags: ['Ingest bulk directory folder paths'],
-        verified: true,
-        version: 'v2',
-      },
-      {
-        id: 'de-write-connect',
-        label: 'Write to Trimble Connect',
-        icon: 'cloud_upload',
-        description:
-          'Upload processed files to a Trimble Connect destination folder when the workflow completes.',
-        provider: 'Trimble Connect',
-        specTag: 'MAX 500MB',
-        tags: ['Integration', 'Connectivity', 'Connect', 'Write'],
-        verified: true,
-        version: 'v3',
-      },
-    ],
+    id: 'de-read-file-connect',
+    label: 'Read File From Trimble Connect',
+    icon: 'file',
+    description:
+      'Read files from Trimble Connect folders and pass them to downstream workflow steps for processing or conversion.',
+    provider: 'Trimble Connect',
+    category: 'Integration & Orchestration',
+    fileType: 'Neutral',
+    action: 'Read / Get',
+    specTag: 'MAX 500MB',
+    verified: true,
+    version: 'v3',
   },
   {
-    id: 'format-conversion',
-    label: 'Format Conversion & Translation',
-    context: 'data-engineering',
-    defaultExpanded: false,
-    items: [
-      {
-        id: 'de-csv-tflx',
-        label: 'CSV to TFLX Converter',
-        icon: 'refresh',
-        description:
-          'Convert CSV survey data into TFLX format for FieldLink and downstream model workflows.',
-        provider: 'Trimble Connect',
-        specTag: 'CSV input',
-        tags: ['Conversion', 'CSV', 'TFLX', 'FieldLink'],
-        verified: true,
-        version: 'v2',
-      },
-      {
-        id: 'de-nwd-trb',
-        label: 'NWD to TRB Converter',
-        icon: 'cube',
-        description:
-          'Translate Navisworks NWD models into TRB packages for Trimble model viewer workflows.',
-        provider: 'Trimble Connect',
-        specTag: 'Model convert',
-        tags: ['Conversion', 'NWD', 'TRB', 'Model Assimilation'],
-        verified: true,
-        version: 'v2',
-      },
-      {
-        id: 'de-tflx-trb',
-        label: 'TFLX to TRB Converter',
-        icon: 'refresh',
-        description:
-          'Convert TFLX field data packages into TRB deliverables for merged model publishing.',
-        provider: 'Trimble Connect',
-        specTag: 'TFLX input',
-        tags: ['Conversion', 'TFLX', 'TRB'],
-        verified: true,
-        version: 'v1',
-      },
-      {
-        id: 'de-merge-trb',
-        label: 'Merge TRB Files',
-        icon: 'flowchart',
-        description:
-          'Combine multi-trade design and as-built models into a master viewer deliverable for project teams.',
-        provider: 'Trimble Connect',
-        specTag: 'Multi-file',
-        tags: ['Combines multi-trade design and as-built models into a master viewer deliverable'],
-        verified: true,
-        version: 'v2',
-      },
-    ],
+    id: 'de-write-connect',
+    label: 'Write to Trimble Connect',
+    icon: 'cloud_upload',
+    description:
+      'Upload processed files to a Trimble Connect destination folder when the workflow completes.',
+    provider: 'Trimble Connect',
+    category: 'Integration & Orchestration',
+    fileType: 'Neutral',
+    action: 'Write / Push',
+    specTag: 'MAX 500MB',
+    verified: true,
+    version: 'v3',
   },
   {
-    id: 'spatial-analysis',
-    label: 'Spatial Analysis & Geometry',
-    context: 'data-engineering',
-    defaultExpanded: false,
-    items: [
-      {
-        id: 'de-reproject-coordinates',
-        label: 'Reproject Coordinates',
-        icon: 'location',
-        description:
-          'Reproject spatial coordinates between CRS definitions using FME-powered geometry transforms.',
-        provider: 'Trimble Connect',
-        specTag: 'Spatial',
-        tags: ['Spatial', 'Coordinates', 'Reproject', 'FME'],
-        verified: true,
-        version: 'v1',
-      },
-      {
-        id: 'de-geometry-filter',
-        label: 'Geometry Filter (Includes 3D)',
-        icon: 'filter',
-        description:
-          'Filter geometry features by spatial rules, including 3D bounds, before passing data to later steps.',
-        provider: 'Trimble Connect',
-        specTag: '3D filter',
-        tags: ['Analysis', 'Spatial', 'Geometry', 'Filter', '3D'],
-        verified: true,
-        version: 'v3',
-      },
-    ],
+    id: 'de-csv-tflx',
+    label: 'CSV to TFLX Converter',
+    icon: 'refresh',
+    description:
+      'Convert CSV survey data into TFLX format for FieldLink and downstream model workflows.',
+    provider: 'Trimble FieldLink',
+    category: 'Data Conversion & Format Translation',
+    fileType: 'Survey Layouts & Points (CSV, TFLX)',
+    action: 'Convert / Translate',
+    specTag: 'CSV input',
+    verified: true,
+    version: 'v2',
+  },
+  {
+    id: 'de-nwd-trb',
+    label: 'NWD to TRB Converter',
+    icon: 'cube',
+    description:
+      'Translate Navisworks NWD models into TRB packages for Trimble model viewer workflows.',
+    provider: 'Trimble Connect',
+    category: 'Data Conversion & Format Translation',
+    fileType: '3D Models & BIM (NWD, TRB, IFC)',
+    action: 'Convert / Translate',
+    specTag: 'Model convert',
+    verified: true,
+    version: 'v2',
+  },
+  {
+    id: 'de-merge-trb',
+    label: 'Merge TRB Files',
+    icon: 'flowchart',
+    description:
+      'Combine multi-trade design and as-built models into a master viewer deliverable for project teams.',
+    provider: 'Trimble Connect',
+    category: 'Data Conversion & Format Translation',
+    fileType: '3D Models & BIM (NWD, TRB, IFC)',
+    action: 'Merge / Combine',
+    specTag: 'Multi-file',
+    verified: true,
+    version: 'v2',
+  },
+  {
+    id: 'de-reproject-coordinates',
+    label: 'Reproject Coordinates',
+    icon: 'location',
+    description:
+      'Reproject spatial coordinates between CRS definitions using FME-powered geometry transforms.',
+    provider: 'FME (Safe Software)',
+    category: 'Geometry & Spatial Transformation',
+    fileType: 'Geospatial & GIS Data',
+    action: 'Transform / Modify',
+    specTag: 'Spatial',
+    verified: true,
+    version: 'v1',
+  },
+  {
+    id: 'de-geometry-filter',
+    label: 'Geometry Filter',
+    icon: 'filter',
+    description:
+      'Filter geometry features by spatial rules, including 3D bounds, before passing data to later steps.',
+    provider: 'FME (Safe Software)',
+    category: 'Spatial Analysis & Filtering',
+    fileType: '3D Models & BIM (NWD, TRB, IFC)',
+    action: 'Filter / Validate',
+    specTag: '3D filter',
+    verified: true,
+    version: 'v3',
+  },
+  {
+    id: 'pm-create-project-space',
+    label: 'Create Project inside ProjectSight',
+    icon: 'folder_closed',
+    description:
+      'Generate a new permission-based project hub natively inside ProjectSight and route collaborators to the right workspace.',
+    provider: 'ProjectSight',
+    category: 'Project Management & Coordination',
+    fileType: 'Neutral',
+    action: 'Create / Link',
+    specTag: 'Project setup',
+    verified: true,
+    version: 'v2',
+  },
+  {
+    id: 'pm-create-rfi',
+    label: 'Create RFI inside ProjectSight',
+    icon: 'collaboration',
+    description:
+      'Create an automated RFI field routing layout and assign reviewers based on project rules.',
+    provider: 'ProjectSight',
+    category: 'Project Management & Coordination',
+    fileType: 'Neutral',
+    action: 'Create / Link',
+    specTag: 'RFI workflow',
+    verified: true,
+    version: 'v3',
+  },
+  {
+    id: 'pm-create-issue-card',
+    label: 'Create Issue inside ProjectSight',
+    icon: 'report',
+    description:
+      'Log a punch list issue directly to ProjectSight tables with status, assignee, and due date fields.',
+    provider: 'ProjectSight',
+    category: 'Project Management & Coordination',
+    fileType: 'Neutral',
+    action: 'Create / Link',
+    specTag: 'Issue tracking',
+    verified: true,
+    version: 'v2',
   },
 ];
 
-export const workflowActionLibraryByContext: Record<WorkflowActionContext, WorkflowActionCategory[]> = {
-  'project-management': projectManagementActionLibrary,
-  'data-engineering': dataEngineeringActionLibrary,
-};
+function toGroupId(label: string): string {
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
 
-export function getWorkflowActionCategories(context: WorkflowActionContext): WorkflowActionCategory[] {
-  return workflowActionLibraryByContext[context];
+function getGroupLabel(item: WorkflowActionItem, groupBy: WorkflowGroupBy): string {
+  switch (groupBy) {
+    case 'provider':
+      return item.provider ?? 'Other';
+    case 'category':
+      return item.category ?? 'Other';
+    case 'fileType':
+      return item.fileType ?? 'Other';
+    case 'action':
+      return item.action ?? 'Other';
+    default:
+      return 'Other';
+  }
+}
+
+function inferContext(item: WorkflowActionItem): WorkflowActionContext {
+  return item.id.startsWith('pm-') ? 'project-management' : 'data-engineering';
+}
+
+export function groupWorkflowActions(
+  items: WorkflowActionItem[],
+  groupBy: WorkflowGroupBy,
+): WorkflowActionCategory[] {
+  const groups = new Map<string, WorkflowActionItem[]>();
+
+  for (const item of items) {
+    const label = getGroupLabel(item, groupBy);
+    const existing = groups.get(label);
+    if (existing) {
+      existing.push(item);
+    } else {
+      groups.set(label, [item]);
+    }
+  }
+
+  return Array.from(groups.entries())
+    .sort(([labelA], [labelB]) => labelA.localeCompare(labelB))
+    .map(([label, groupItems]) => ({
+      id: `${groupBy}-${toGroupId(label)}`,
+      label,
+      context: groupItems[0] ? inferContext(groupItems[0]) : 'data-engineering',
+      defaultExpanded: false,
+      items: groupItems,
+    }));
+}
+
+export function getAllWorkflowActions(): WorkflowActionItem[] {
+  return gaBetaOperationLibrary;
+}
+
+export function getGroupedWorkflowActionCategories(
+  groupBy: WorkflowGroupBy = 'category',
+): WorkflowActionCategory[] {
+  return groupWorkflowActions(gaBetaOperationLibrary, groupBy);
 }
 
 export function getAllWorkflowActionCategories(): WorkflowActionCategory[] {
-  return [
-    ...workflowActionLibraryByContext['project-management'],
-    ...workflowActionLibraryByContext['data-engineering'],
-  ];
+  return getGroupedWorkflowActionCategories('category');
 }
 
-export function flattenWorkflowActions(context: WorkflowActionContext) {
-  return getWorkflowActionCategories(context).flatMap((category) => category.items);
+export function flattenWorkflowActions(_context?: WorkflowActionContext): WorkflowActionItem[] {
+  return gaBetaOperationLibrary;
 }
 
 export function findWorkflowActionById(id: string) {
-  return [
-    ...flattenWorkflowActions('project-management'),
-    ...flattenWorkflowActions('data-engineering'),
-  ].find((item) => item.id === id);
+  return gaBetaOperationLibrary.find((item) => item.id === id);
 }

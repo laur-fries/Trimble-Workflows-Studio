@@ -1,5 +1,4 @@
 import {
-  ModusWcButton,
   ModusWcDivider,
   ModusWcIcon,
   ModusWcTextInput,
@@ -11,23 +10,19 @@ import type { StudioStepConfigField } from './stepConfigFields';
 interface StudioCanvasPropertiesPanelProps {
   configFields: StudioStepConfigField[];
   configValues: Record<string, string>;
-  isActive: boolean;
   node: WorkflowCanvasNode;
-  onActivate: () => void;
+  readOnly?: boolean;
   onClose: () => void;
   onConfigChange: (fieldId: string, value: string) => void;
-  onDeactivate: () => void;
 }
 
 export default function StudioCanvasPropertiesPanel({
   configFields,
   configValues,
-  isActive,
   node,
-  onActivate,
+  readOnly = false,
   onClose,
   onConfigChange,
-  onDeactivate,
 }: StudioCanvasPropertiesPanelProps) {
   return (
     <aside className="studio-canvas-properties-panel" aria-label="Node properties">
@@ -53,6 +48,12 @@ export default function StudioCanvasPropertiesPanel({
             </div>
           </div>
 
+          {readOnly && (
+            <p className="studio-canvas-properties-readonly-notice">
+              Configuration is locked in preview mode.
+            </p>
+          )}
+
           <ModusWcDivider customClass="studio-canvas-properties-divider" />
 
           {configFields.length > 0 ? (
@@ -65,12 +66,17 @@ export default function StudioCanvasPropertiesPanel({
                   <div key={field.id} className="studio-canvas-properties-config-field">
                     <ModusWcTextInput
                       bordered={false}
+                      disabled={readOnly}
                       inputId={`studio-step-field-${node.id}-${field.id}`}
                       label={field.label}
                       placeholder={field.placeholder}
                       required
                       value={configValues[field.id] ?? ''}
                       onInputChange={(event: CustomEvent) => {
+                        if (readOnly) {
+                          return;
+                        }
+
                         const nextValue = event.detail?.target?.value || '';
                         onConfigChange(field.id, nextValue);
                       }}
@@ -87,42 +93,6 @@ export default function StudioCanvasPropertiesPanel({
               No additional configuration is required for this step.
             </p>
           )}
-
-          <ModusWcDivider customClass="studio-canvas-properties-divider" />
-
-          <section className="studio-canvas-properties-section" aria-labelledby="studio-node-status-heading">
-            <h3 className="studio-canvas-properties-section-title" id="studio-node-status-heading">
-              Node status
-            </h3>
-            <p className="studio-canvas-properties-section-copy">
-              Control whether this step runs when the workflow executes.
-            </p>
-            <div className="studio-canvas-properties-status-actions">
-              <ModusWcButton
-                color={isActive ? 'primary' : 'tertiary'}
-                customClass="studio-canvas-properties-activate"
-                disabled={isActive}
-                onButtonClick={onActivate}
-                size="sm"
-                variant={isActive ? 'filled' : 'outlined'}
-              >
-                Activate
-              </ModusWcButton>
-              <ModusWcButton
-                color={!isActive ? 'primary' : 'tertiary'}
-                customClass="studio-canvas-properties-deactivate"
-                disabled={!isActive}
-                onButtonClick={onDeactivate}
-                size="sm"
-                variant={!isActive ? 'filled' : 'outlined'}
-              >
-                Deactivate
-              </ModusWcButton>
-            </div>
-            <p className="studio-canvas-properties-status-label">
-              Current status: {isActive ? 'Active' : 'Inactive'}
-            </p>
-          </section>
         </div>
       </div>
 

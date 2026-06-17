@@ -13,7 +13,7 @@ import {
 import StudioStarterPicker from './StudioStarterPicker';
 import StudioWorkflowActionPicker from './StudioWorkflowActionPicker';
 import { setActionDragData } from './starterDrag';
-import { flattenWorkflowActions } from './workflowActionLibrary';
+import { getAllWorkflowActions } from './workflowActionLibrary';
 
 export type StepsPanelMode = 'starter' | 'actions';
 
@@ -77,13 +77,7 @@ export default function StudioCanvasStepsPanel({
   const [recentlyUsedExpanded, setRecentlyUsedExpanded] = useState(true);
   const isStarterMode = panelMode === 'starter';
 
-  const allContextActions = useMemo(
-    () => [
-      ...flattenWorkflowActions('project-management'),
-      ...flattenWorkflowActions('data-engineering'),
-    ],
-    [],
-  );
+  const allContextActions = useMemo(() => getAllWorkflowActions(), []);
   const recentlyUsed = useMemo(
     () =>
       recentlyUsedStepIds
@@ -159,6 +153,7 @@ export default function StudioCanvasStepsPanel({
                 <StudioWorkflowActionPicker
                   searchQuery={searchQuery}
                   selectedActionId={selectedActionId}
+                  instanceId="canvas-steps-panel"
                   onSelectAction={onSelectAction}
                 />
               </div>

@@ -32,31 +32,46 @@ const starterFieldsById: Record<string, StudioStepConfigField[]> = {
       helperText: 'Updated files in this folder will trigger the workflow.',
     },
   ],
-  'starter-clash-detection': [
+  'starter-bcf-topic-created': [
     {
       id: 'project',
       label: 'Project',
       placeholder: 'Select a Trimble Connect project',
     },
-  ],
-  'starter-rfi-created': [
     {
-      id: 'projectSpace',
-      label: 'Project space',
-      placeholder: 'Select a ProjectSight project space',
+      id: 'modelSpace',
+      label: 'Model space',
+      placeholder: 'Select a model space',
+      helperText: 'New BCF topics in this model space will trigger the workflow.',
     },
   ],
-  'starter-issue-status': [
+  'starter-on-schedule': [
     {
-      id: 'projectSpace',
-      label: 'Project space',
-      placeholder: 'Select a ProjectSight project space',
+      id: 'frequency',
+      label: 'Frequency',
+      placeholder: 'Select schedule frequency',
     },
     {
-      id: 'status',
-      label: 'Status',
-      placeholder: 'Select a status',
-      helperText: 'Trigger when an issue moves to this status.',
+      id: 'runTime',
+      label: 'Run time',
+      placeholder: 'Select run time',
+      helperText: 'The workflow runs automatically at this time.',
+    },
+  ],
+  'starter-polling-interval': [
+    {
+      id: 'interval',
+      label: 'Polling interval',
+      placeholder: 'Every 15 minutes',
+      helperText: 'How often the workflow checks for updates.',
+    },
+  ],
+  'starter-on-demand': [
+    {
+      id: 'runLabel',
+      label: 'Run button label',
+      placeholder: 'Run workflow',
+      helperText: 'Label shown on the manual run action.',
     },
   ],
 };
@@ -94,6 +109,18 @@ const actionFieldsById: Record<string, StudioStepConfigField[]> = {
       id: 'assignee',
       label: 'Default assignee',
       placeholder: 'Select a team member',
+    },
+  ],
+  'pm-create-project-space': [
+    {
+      id: 'projectSpace',
+      label: 'Project space',
+      placeholder: 'Select a ProjectSight project space',
+    },
+    {
+      id: 'projectName',
+      label: 'Project name',
+      placeholder: 'Enter a project name',
     },
   ],
   'pm-send-email': [

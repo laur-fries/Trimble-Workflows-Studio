@@ -56,13 +56,16 @@ export default function StudioChooseActionModal({
         <p className="studio-choose-starter-modal-subtitle">
           Add the next workflow action from the library.
         </p>
-        <StudioWorkflowActionPicker
-          includeSearch
-          searchQuery={modalSearchQuery}
-          selectedActionId={selectedActionId}
-          onSearchChange={setModalSearchQuery}
-          onSelectAction={handleSelectAction}
-        />
+        {isOpen ? (
+          <StudioWorkflowActionPicker
+            includeSearch
+            instanceId="choose-action-modal"
+            searchQuery={modalSearchQuery}
+            selectedActionId={selectedActionId}
+            onSearchChange={setModalSearchQuery}
+            onSelectAction={handleSelectAction}
+          />
+        ) : null}
       </div>
       <div slot="footer" className="studio-choose-starter-modal-footer">
         <ModusWcButton color="tertiary" size="sm" variant="outlined" onButtonClick={onClose}>

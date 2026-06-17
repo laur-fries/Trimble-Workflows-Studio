@@ -5,6 +5,7 @@ import FlowDetailView, { FlowDetailFooter } from './FlowDetailView';
 import FlowStepConfigView from './FlowStepConfigView';
 import FlowSuccessView, { FlowSuccessFooter } from './FlowSuccessView';
 import FlowsTab, { type FlowMenuAction } from './FlowsTab';
+import DeleteWorkflowConfirmModal from './DeleteWorkflowConfirmModal';
 import WorkflowsPrimaryButton from './WorkflowsPrimaryButton';
 import { discoverFlows } from '../data/discoverFlows';
 import {
@@ -37,7 +38,9 @@ const TURN_ON_DELAY_MS = 2000;
 
 export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: WorkflowsPanelProps) {
   const [activeTab, setActiveTab] = useState<WorkflowsTab>('discover');
+  const [flowDetailReturnTab, setFlowDetailReturnTab] = useState<WorkflowsTab>('discover');
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
+  const [selectedFlowInstanceId, setSelectedFlowInstanceId] = useState<string | null>(null);
   const [selectedStepId, setSelectedStepId] = useState<StepId | null>(null);
   const [flowTitleOverrides, setFlowTitleOverrides] = useState<Record<string, string>>({});
   const [flowStepValues, setFlowStepValues] = useState<Record<string, FlowStepValues>>({});
@@ -45,6 +48,7 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
   const [showStepFieldErrors, setShowStepFieldErrors] = useState(false);
   const [flowActivationState, setFlowActivationState] = useState<FlowActivationState>('idle');
   const [activeFlowIds, setActiveFlowIds] = useState<string[]>([]);
+  const [pendingDeleteFlowInstanceId, setPendingDeleteFlowInstanceId] = useState<string | null>(null);
   const turnOnTimeoutRef = useRef<number | null>(null);
 
   const getFlowTitle = (flow: DiscoverFlow, instanceId?: string) => {
@@ -56,7 +60,10 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
   };
 
   const selectedFlow = discoverFlows.find((flow) => flow.id === selectedFlowId) ?? null;
-  const showFlowDetail = activeTab === 'discover' && selectedFlow !== null;
+  const showFlowDetail = selectedFlow !== null;
+  const isSelectedFlowActive = selectedFlowId
+    ? activeFlowIds.some((instanceId) => instanceId.split('::')[0] === selectedFlowId)
+    : false;
   const showFlowSuccess = showFlowDetail && flowActivationState === 'success';
   const showStepConfig = showFlowDetail && selectedStepId !== null && flowActivationState !== 'success';
   const showFlowOverview = showFlowDetail && selectedStepId === null && flowActivationState !== 'success';
@@ -80,12 +87,96 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
     };
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setPendingDeleteFlowInstanceId(null);
+    }
+  }, [isOpen]);
+
   const resetFlowActivation = () => {
     if (turnOnTimeoutRef.current !== null) {
       window.clearTimeout(turnOnTimeoutRef.current);
       turnOnTimeoutRef.current = null;
     }
     setFlowActivationState('idle');
+  };
+
+  const openFlowDetail = (
+    flowId: string,
+    returnTab: WorkflowsTab,
+    instanceId?: string,
+    options?: { restoreSavedValidation?: boolean },
+  ) => {
+    setFlowDetailReturnTab(returnTab);
+    setSelectedFlowInstanceId(instanceId ?? null);
+    setSelectedFlowId(flowId);
+    setSelectedStepId(null);
+    setShowStepFieldErrors(false);
+    resetFlowActivation();
+
+    if (options?.restoreSavedValidation) {
+      const flow = discoverFlows.find((entry) => entry.id === flowId);
+      if (flow) {
+        const unconfigured = getUnconfiguredStepIds(
+          getFlowSteps(flow),
+          flowStepValues[flowId] ?? {},
+        );
+        setInvalidStepIds(new Set(unconfigured));
+        return;
+      }
+    }
+
+    setInvalidStepIds(new Set());
+  };
+
+  const handleFlowSelectFromFlows = (instanceId: string) => {
+    const flowId = instanceId.split('::')[0];
+    openFlowDetail(flowId, 'flows', instanceId, { restoreSavedValidation: true });
+  };
+
+  const executeDeleteFlow = (instanceId: string) => {
+    const flowId = instanceId.split('::')[0];
+
+    setActiveFlowIds((current) => current.filter((id) => id !== instanceId));
+
+    if (!instanceId.includes('::copy')) {
+      setFlowTitleOverrides((current) => {
+        const next = { ...current };
+        delete next[flowId];
+        return next;
+      });
+      setFlowStepValues((current) => {
+        const next = { ...current };
+        delete next[flowId];
+        return next;
+      });
+    }
+
+    const isViewingDeletedFlow =
+      selectedFlowId === flowId &&
+      (selectedFlowInstanceId === null || selectedFlowInstanceId === instanceId);
+
+    if (isViewingDeletedFlow) {
+      setSelectedFlowId(null);
+      setSelectedFlowInstanceId(null);
+      setSelectedStepId(null);
+      setShowStepFieldErrors(false);
+      setInvalidStepIds(new Set());
+      resetFlowActivation();
+    }
+  };
+
+  const handleConfirmDeleteFlow = () => {
+    if (!pendingDeleteFlowInstanceId) {
+      return;
+    }
+
+    executeDeleteFlow(pendingDeleteFlowInstanceId);
+    setPendingDeleteFlowInstanceId(null);
+  };
+
+  const handleCancelDeleteFlow = () => {
+    setPendingDeleteFlowInstanceId(null);
   };
 
   const handleViewInFlows = () => {
@@ -99,6 +190,7 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
   const handleTabChange = (tab: WorkflowsTab) => {
     setActiveTab(tab);
     setSelectedFlowId(null);
+    setSelectedFlowInstanceId(null);
     setSelectedStepId(null);
     setShowStepFieldErrors(false);
     resetFlowActivation();
@@ -108,14 +200,6 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
     const flowId = instanceId.split('::')[0];
 
     switch (action) {
-      case 'edit':
-        setActiveTab('discover');
-        setSelectedFlowId(flowId);
-        setSelectedStepId(null);
-        setShowStepFieldErrors(false);
-        setInvalidStepIds(new Set());
-        resetFlowActivation();
-        break;
       case 'duplicate':
         setActiveFlowIds((current) => [...current, `${flowId}::copy-${Date.now()}`]);
         break;
@@ -126,19 +210,7 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
         setActiveFlowIds((current) => current.filter((id) => id !== instanceId));
         break;
       case 'delete':
-        setActiveFlowIds((current) => current.filter((id) => id !== instanceId));
-        if (!instanceId.includes('::copy')) {
-          setFlowTitleOverrides((current) => {
-            const next = { ...current };
-            delete next[flowId];
-            return next;
-          });
-          setFlowStepValues((current) => {
-            const next = { ...current };
-            delete next[flowId];
-            return next;
-          });
-        }
+        setPendingDeleteFlowInstanceId(instanceId);
         break;
       default:
         break;
@@ -146,7 +218,9 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
   };
 
   const handleBackFromFlow = () => {
+    setActiveTab(flowDetailReturnTab);
     setSelectedFlowId(null);
+    setSelectedFlowInstanceId(null);
     setSelectedStepId(null);
     setShowStepFieldErrors(false);
     setInvalidStepIds(new Set());
@@ -327,7 +401,7 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
           {showFlowOverview && selectedFlow && (
             <FlowDetailView
               flow={selectedFlow}
-              title={getFlowTitle(selectedFlow)}
+              title={getFlowTitle(selectedFlow, selectedFlowInstanceId ?? undefined)}
               onTitleChange={(title) => {
                 setFlowTitleOverrides((current) => ({ ...current, [selectedFlow.id]: title }));
               }}
@@ -355,20 +429,12 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
                     key={flow.id}
                     className="workflows-card"
                     onClick={() => {
-                      setSelectedFlowId(flow.id);
-                      setSelectedStepId(null);
-                      setShowStepFieldErrors(false);
-                      setInvalidStepIds(new Set());
-                      resetFlowActivation();
+                      openFlowDetail(flow.id, 'discover');
                     }}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
-                        setSelectedFlowId(flow.id);
-                        setSelectedStepId(null);
-                        setShowStepFieldErrors(false);
-                        setInvalidStepIds(new Set());
-                        resetFlowActivation();
+                        openFlowDetail(flow.id, 'discover');
                       }
                     }}
                     role="button"
@@ -396,6 +462,7 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
               getFlowTitle={getFlowTitle}
               onBrowseTemplates={() => setActiveTab('discover')}
               onFlowAction={handleFlowAction}
+              onFlowSelect={handleFlowSelectFromFlows}
             />
           )}
 
@@ -405,7 +472,11 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
         {showFlowSuccess ? (
           <FlowSuccessFooter onOpenStudio={onOpenStudio} />
         ) : showFlowOverview ? (
-          <FlowDetailFooter onTurnOn={handleTurnOn} isLoading={flowActivationState === 'loading'} />
+          <FlowDetailFooter
+            isActive={isSelectedFlowActive}
+            onTurnOn={handleTurnOn}
+            isLoading={flowActivationState === 'loading'}
+          />
         ) : showStepConfig && activeStep ? (
           <footer className="workflows-flow-detail-footer workflows-step-config-panel-footer">
             <WorkflowsPrimaryButton fullWidth onClick={handleNextStep}>
@@ -425,6 +496,12 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
             </ModusWcButton>
           </footer>
         ) : null}
+
+        <DeleteWorkflowConfirmModal
+          isOpen={pendingDeleteFlowInstanceId !== null}
+          onCancel={handleCancelDeleteFlow}
+          onConfirm={handleConfirmDeleteFlow}
+        />
       </div>
     </aside>
   );

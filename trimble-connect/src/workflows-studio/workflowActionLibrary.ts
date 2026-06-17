@@ -155,6 +155,34 @@ export const gaBetaOperationLibrary: WorkflowActionItem[] = [
     verified: true,
     version: 'v2',
   },
+  {
+    id: 'pm-send-email',
+    label: 'Send Email Notification',
+    icon: 'email',
+    description:
+      'Send an email or formatted notification to project team members when a workflow event occurs.',
+    provider: 'Notifications',
+    category: 'Notifications & Alerts',
+    fileType: 'Neutral',
+    action: 'Notify / Alert',
+    specTag: 'Email',
+    verified: true,
+    version: 'v2',
+  },
+  {
+    id: 'pm-log-vista',
+    label: 'Log Entry to Vista',
+    icon: 'history',
+    description:
+      'Write workflow results and audit events to Vista for downstream ERP and field reporting.',
+    provider: 'Vista',
+    category: 'Integration & Orchestration',
+    fileType: 'Neutral',
+    action: 'Write / Push',
+    specTag: 'ERP log',
+    verified: true,
+    version: 'v1',
+  },
 ];
 
 function toGroupId(label: string): string {

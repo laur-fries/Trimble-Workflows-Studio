@@ -5,7 +5,6 @@ import {
   ModusWcIcon,
   ModusWcTypography,
 } from '@trimble-oss/moduswebcomponents-react';
-import WorkflowsPrimaryButton from '../components/WorkflowsPrimaryButton';
 import StudioChooseActionModal from './StudioChooseActionModal';
 import StudioChooseStarterModal from './StudioChooseStarterModal';
 import StudioCanvasPropertiesPanel from './StudioCanvasPropertiesPanel';
@@ -25,6 +24,7 @@ import {
 import { findWorkflowActionById } from './workflowActionLibrary';
 import { readActionDragId, isActionDrag, isStarterDrag, readStarterDragId } from './starterDrag';
 import { getStudioStepConfigFields } from './stepConfigFields';
+import { toWorkflowCanvasState, type WorkflowModel } from './workflowGenerator';
 
 export interface PlacedActionStep {
   instanceId: string;
@@ -105,6 +105,7 @@ export type StudioCanvasMode = 'edit' | 'preview' | 'cloned';
 
 interface StudioCanvasProps {
   template: StudioTemplate | null;
+  generatedWorkflow?: WorkflowModel | null;
   highlightStartNode?: boolean;
   assistantPrompt?: string;
   canvasMode?: StudioCanvasMode;
@@ -165,6 +166,7 @@ function resolveTemplateStepNode(step: StudioTemplateStep, index: number): Workf
 
 export default function StudioCanvas({
   template,
+  generatedWorkflow = null,
   highlightStartNode = false,
   assistantPrompt = '',
   canvasMode = 'edit',
@@ -194,6 +196,25 @@ export default function StudioCanvas({
       setActiveFlowSlot('starter');
     }
   }, [highlightStartNode]);
+
+  useEffect(() => {
+    if (!generatedWorkflow) {
+      return;
+    }
+
+    const canvasState = toWorkflowCanvasState(generatedWorkflow);
+
+    setWorkflowTitle(canvasState.title);
+    setStarterStep(canvasState.starterStep);
+    setActionSteps(canvasState.actionSteps);
+    setActiveFlowSlot('action');
+    setSelectedNodeId(canvasState.selectedNodeId);
+    setPropertiesPanelOpen(Boolean(canvasState.selectedNodeId));
+    setPanelHighlightedStarterId(canvasState.starterStep?.id ?? null);
+    setPanelHighlightedActionId(
+      canvasState.actionSteps[canvasState.actionSteps.length - 1]?.item.id ?? null,
+    );
+  }, [generatedWorkflow]);
 
   useEffect(() => {
     if (!template?.steps.length) {
@@ -607,7 +628,9 @@ export default function StudioCanvas({
               <ModusWcIcon decorative name="play_circle" size="sm" variant="solid" />
               Test Run
             </ModusWcButton>
-            <WorkflowsPrimaryButton onClick={() => undefined}>Save</WorkflowsPrimaryButton>
+            <ModusWcButton color="primary" size="sm" variant="filled" onButtonClick={() => undefined}>
+              Save
+            </ModusWcButton>
             <ModusWcButton
               aria-label="More actions"
               color="tertiary"

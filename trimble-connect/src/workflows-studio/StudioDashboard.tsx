@@ -8,6 +8,7 @@ import StudioAssistantPrompt from './StudioAssistantPrompt';
 import WorkflowsPrimaryButton from '../components/WorkflowsPrimaryButton';
 import StudioTemplateCard, { StudioTemplateList } from './StudioTemplateCard';
 import { studioTemplateGroups, type StudioTemplate } from './data';
+import type { WorkflowGenerationPhase } from './workflowGenerator';
 import {
   filterTemplateGroups,
   flattenTemplates,
@@ -20,7 +21,9 @@ interface StudioDashboardProps {
   onBack: () => void;
   onUseTemplate: (template: StudioTemplate) => void;
   onCreateNewWorkflow: () => void;
-  onAssistantCreate: (task: string) => void;
+  onAssistantCreate: (task: string) => void | Promise<void>;
+  isGeneratingWorkflow?: boolean;
+  generationPhase?: WorkflowGenerationPhase | null;
 }
 
 const catalogTabs = studioTemplateGroups.map((group) => ({
@@ -33,6 +36,8 @@ export default function StudioDashboard({
   onUseTemplate,
   onCreateNewWorkflow,
   onAssistantCreate,
+  isGeneratingWorkflow = false,
+  generationPhase = null,
 }: StudioDashboardProps) {
   const [templateSearchQuery, setTemplateSearchQuery] = useState('');
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(() => new Set());
@@ -94,7 +99,11 @@ export default function StudioDashboard({
       </header>
 
       <div className="studio-dashboard-content">
-        <StudioAssistantPrompt onCreate={onAssistantCreate} />
+        <StudioAssistantPrompt
+          generationPhase={generationPhase}
+          isGenerating={isGeneratingWorkflow}
+          onCreate={onAssistantCreate}
+        />
       </div>
 
       <section className="studio-template-catalog" aria-label="Template catalog">

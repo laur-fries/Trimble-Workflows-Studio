@@ -723,11 +723,29 @@ modus-wc-navbar.studio-navbar .modus-wc-navbar-end {
   margin: 0 0 24px;
 }
 
+.studio-assistant-nudge.is-generating {
+  animation: studio-assistant-gradient-flow 2.4s linear infinite;
+  background: linear-gradient(90deg, #00a9c7 0%, #7b61ff 35%, #d946ef 70%, #00a9c7 100%);
+  background-size: 220% 100%;
+  overflow: hidden;
+}
+
+@keyframes studio-assistant-gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
 .studio-assistant-nudge {
   background: linear-gradient(90deg, #00a9c7 0%, #7b61ff 52%, #d946ef 100%);
   border-radius: 12px;
   margin: 0 auto;
   max-width: 760px;
+  overflow: hidden;
   padding: 2px;
 }
 
@@ -737,7 +755,96 @@ modus-wc-navbar.studio-navbar .modus-wc-navbar-end {
   border-radius: 10px;
   display: flex;
   gap: 8px;
+  isolation: isolate;
+  overflow: hidden;
   padding: 6px 6px 6px 4px;
+  position: relative;
+}
+
+.studio-assistant-nudge-inner.is-generating::after {
+  animation: studio-assistant-shimmer 1.8s ease-in-out infinite;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    transparent 38%,
+    color-mix(in srgb, #7b61ff 12%, transparent) 48%,
+    color-mix(in srgb, #d946ef 16%, transparent) 52%,
+    transparent 62%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  border-radius: 10px;
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.studio-assistant-nudge-inner.is-generating > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes studio-assistant-shimmer {
+  0% {
+    background-position: 120% 0;
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 0.85;
+  }
+
+  100% {
+    background-position: -120% 0;
+    opacity: 0.45;
+  }
+}
+
+.studio-assistant-generating-panel {
+  background-color: color-mix(in srgb, var(--modus-wc-color-white) 88%, transparent);
+  border-radius: 0 0 10px 10px;
+  margin-top: -2px;
+  padding: 10px 14px 12px;
+}
+
+.studio-assistant-generating-progress-track {
+  background-color: color-mix(in srgb, var(--modus-wc-color-base-200) 65%, transparent);
+  border-radius: 9999px;
+  height: 4px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.studio-assistant-generating-progress-fill {
+  background: linear-gradient(90deg, #00a9c7 0%, #7b61ff 52%, #d946ef 100%);
+  border-radius: inherit;
+  height: 100%;
+  transition: width 0.65s ease;
+  width: 0;
+}
+
+.studio-assistant-generating-status {
+  animation: studio-assistant-status-fade 0.45s ease;
+  color: var(--modus-wc-color-base-content-low-contrast);
+  font-size: 12px;
+  font-weight: var(--modus-wc-font-weight-semibold);
+  line-height: 1.4;
+  margin: 8px 0 0;
+  text-align: left;
+}
+
+@keyframes studio-assistant-status-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .studio-assistant-prompt-input {
@@ -796,10 +903,68 @@ modus-wc-navbar.studio-navbar .modus-wc-navbar-end {
   outline-offset: 2px;
 }
 
+.studio-assistant-generate-btn.is-generating {
+  animation: studio-assistant-btn-pulse 1.2s ease-in-out infinite;
+  cursor: wait;
+  min-width: 148px;
+}
+
+.studio-assistant-generate-btn-loader {
+  color: var(--modus-wc-color-white);
+  flex-shrink: 0;
+}
+
+.studio-assistant-generate-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.88;
+}
+
+@keyframes studio-assistant-btn-pulse {
+  0%,
+  100% {
+    opacity: 0.88;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
 .studio-assistant-generate-btn-icon {
   flex-shrink: 0;
   height: 16px;
   width: 16px;
+}
+
+.studio-assistant-sample-prompt {
+  margin: 10px auto 0;
+}
+
+.studio-assistant-sample-prompt-btn {
+  background: none;
+  border: none;
+  color: var(--modus-wc-color-base-content-low-contrast);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  line-height: 20px;
+  padding: 0;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.studio-assistant-sample-prompt-btn:hover {
+  color: var(--modus-wc-color-blue);
+  text-decoration-color: currentColor;
+}
+
+.studio-assistant-sample-prompt-btn:focus-visible {
+  color: var(--modus-wc-color-blue);
+  outline: 2px solid var(--modus-wc-color-blue);
+  outline-offset: 2px;
+  text-decoration-color: currentColor;
 }
 
 .studio-ai-disclaimer {
@@ -809,7 +974,7 @@ modus-wc-navbar.studio-navbar .modus-wc-navbar-end {
   gap: 8px 12px;
   justify-content: center;
   line-height: 20px;
-  margin: 12px auto 0;
+  margin: 8px auto 0;
   max-width: 760px;
 }
 

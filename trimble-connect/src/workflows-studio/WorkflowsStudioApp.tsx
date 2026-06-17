@@ -5,6 +5,11 @@ import StudioDashboard from './StudioDashboard';
 import StudioMyWorkflows from './StudioMyWorkflows';
 import StudioCanvas, { type StudioCanvasMode } from './StudioCanvas';
 import type { StudioTemplate, StudioView, StudioViewportMode, StudioWorkspaceTab } from './data';
+import {
+  generateWorkflow,
+  type WorkflowGenerationPhase,
+  type WorkflowModel,
+} from './workflowGenerator';
 import './WorkflowsStudio.css';
 
 interface WorkflowsStudioAppProps {
@@ -20,6 +25,9 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
   const [canvasMode, setCanvasMode] = useState<StudioCanvasMode>('edit');
   const [highlightStartNode, setHighlightStartNode] = useState(initialMode === 'canvas');
   const [assistantPrompt, setAssistantPrompt] = useState('');
+  const [generatedWorkflow, setGeneratedWorkflow] = useState<WorkflowModel | null>(null);
+  const [isGeneratingWorkflow, setIsGeneratingWorkflow] = useState(false);
+  const [generationPhase, setGenerationPhase] = useState<WorkflowGenerationPhase | null>(null);
 
   const handleWorkspaceTabChange = (tab: StudioWorkspaceTab) => {
     setWorkspaceTab(tab);
@@ -28,27 +36,44 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
     setCanvasMode('edit');
     setHighlightStartNode(false);
     setAssistantPrompt('');
+    setGeneratedWorkflow(null);
   };
 
   const handleCreateNewWorkflow = () => {
     setSelectedTemplate(null);
     setAssistantPrompt('');
+    setGeneratedWorkflow(null);
     setHighlightStartNode(true);
     setCanvasMode('edit');
     setView('canvas');
   };
 
-  const handleAssistantCreate = (task: string) => {
+  const handleGenerateSuccess = (model: WorkflowModel) => {
+    setGeneratedWorkflow(model);
     setSelectedTemplate(null);
-    setAssistantPrompt(task);
-    setHighlightStartNode(true);
+    setAssistantPrompt(model.prompt);
+    setHighlightStartNode(false);
     setCanvasMode('edit');
     setView('canvas');
+  };
+
+  const handleAssistantCreate = async (task: string) => {
+    setIsGeneratingWorkflow(true);
+    setGenerationPhase('thinking');
+
+    try {
+      const model = await generateWorkflow(task, setGenerationPhase);
+      handleGenerateSuccess(model);
+    } finally {
+      setIsGeneratingWorkflow(false);
+      setGenerationPhase(null);
+    }
   };
 
   const handleUseTemplate = (template: StudioTemplate) => {
     setSelectedTemplate(template);
     setAssistantPrompt('');
+    setGeneratedWorkflow(null);
     setHighlightStartNode(false);
     setCanvasMode('edit');
     setView('canvas');
@@ -61,6 +86,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
     setCanvasMode('edit');
     setHighlightStartNode(false);
     setAssistantPrompt('');
+    setGeneratedWorkflow(null);
   };
 
   const renderContent = () => {
@@ -68,6 +94,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
       return (
         <StudioCanvas
           template={selectedTemplate}
+          generatedWorkflow={generatedWorkflow}
           highlightStartNode={highlightStartNode}
           assistantPrompt={assistantPrompt}
           canvasMode={canvasMode}
@@ -86,6 +113,8 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
         onUseTemplate={handleUseTemplate}
         onCreateNewWorkflow={handleCreateNewWorkflow}
         onAssistantCreate={handleAssistantCreate}
+        isGeneratingWorkflow={isGeneratingWorkflow}
+        generationPhase={generationPhase}
       />
     );
   };

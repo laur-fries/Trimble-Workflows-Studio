@@ -4,14 +4,24 @@ import Sidebar from './components/Sidebar';
 import ExplorerContent from './components/ExplorerContent';
 import WorkflowsPanel from './components/WorkflowsPanel';
 import WorkflowsStudioApp from './workflows-studio/WorkflowsStudioApp';
+import type { PanelWorkflowCanvasPayload } from './workflows-studio/panelWorkflowBridge';
 import './App.css';
 
 function App() {
   const [workflowsOpen, setWorkflowsOpen] = useState(false);
   const [showWorkflowsStudio, setShowWorkflowsStudio] = useState(false);
+  const [panelWorkflowPayload, setPanelWorkflowPayload] = useState<PanelWorkflowCanvasPayload | null>(null);
 
   if (showWorkflowsStudio) {
-    return <WorkflowsStudioApp onBack={() => setShowWorkflowsStudio(false)} />;
+    return (
+      <WorkflowsStudioApp
+        panelWorkflow={panelWorkflowPayload}
+        onBack={() => {
+          setShowWorkflowsStudio(false);
+          setPanelWorkflowPayload(null);
+        }}
+      />
+    );
   }
 
   return (
@@ -29,6 +39,12 @@ function App() {
             onClose={() => setWorkflowsOpen(false)}
             onOpenStudio={() => {
               setWorkflowsOpen(false);
+              setPanelWorkflowPayload(null);
+              setShowWorkflowsStudio(true);
+            }}
+            onEditFlowInStudio={(payload) => {
+              setWorkflowsOpen(false);
+              setPanelWorkflowPayload(payload);
               setShowWorkflowsStudio(true);
             }}
           />

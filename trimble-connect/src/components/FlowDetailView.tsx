@@ -187,15 +187,21 @@ export default function FlowDetailView({
 }
 
 interface FlowDetailFooterProps {
+  onEditInStudio: () => void;
   onTurnOn: () => void;
   isLoading?: boolean;
   isActive?: boolean;
 }
 
-export function FlowDetailFooter({ onTurnOn, isLoading = false, isActive = false }: FlowDetailFooterProps) {
+export function FlowDetailFooter({
+  onEditInStudio,
+  onTurnOn,
+  isLoading = false,
+  isActive = false,
+}: FlowDetailFooterProps) {
   return (
     <footer className="workflows-flow-detail-footer">
-      <ModusWcButton color="primary" variant="borderless" size="sm">
+      <ModusWcButton color="primary" variant="borderless" size="sm" onButtonClick={onEditInStudio}>
         <ModusWcIcon decorative name="launch" size="sm" />
         Edit in Trimble Workflows
       </ModusWcButton>

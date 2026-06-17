@@ -1108,6 +1108,34 @@ modus-wc-navbar.studio-navbar .modus-wc-navbar-end {
   gap: 8px;
 }
 
+.studio-canvas-toolbar .studio-canvas-toolbar-actions modus-wc-button .modus-wc-btn.modus-wc-btn-sm:not(.modus-wc-btn-square):not(.modus-wc-btn-circle) {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--modus-wc-spacing-xs);
+  height: var(--modus-wc-size-sm);
+  min-height: var(--modus-wc-size-sm);
+  padding: var(--modus-wc-spacing-xs) var(--modus-wc-spacing-md);
+}
+
+.studio-canvas-toolbar .studio-canvas-toolbar-actions modus-wc-button .modus-wc-btn.studio-canvas-toolbar-save-btn {
+  background-color: var(--modus-wc-color-trimble-blue);
+  border: 1px solid var(--modus-wc-color-trimble-blue);
+  color: var(--modus-wc-color-white);
+  font-weight: var(--modus-wc-font-weight-semibold);
+}
+
+.studio-canvas-toolbar .studio-canvas-toolbar-actions modus-wc-button .modus-wc-btn.studio-canvas-toolbar-save-btn:hover:not(:disabled) {
+  background-color: var(--modus-wc-color-blue-light);
+  border-color: var(--modus-wc-color-blue-light);
+  color: var(--modus-wc-color-white);
+}
+
+.studio-canvas-toolbar .studio-canvas-toolbar-actions modus-wc-button .modus-wc-btn.studio-canvas-toolbar-save-btn:active:not(:disabled) {
+  background-color: var(--modus-wc-color-blue-dark);
+  border-color: var(--modus-wc-color-blue-dark);
+  color: var(--modus-wc-color-white);
+}
+
 .studio-canvas-body {
   align-items: stretch;
   display: flex;
@@ -2073,6 +2101,43 @@ modus-wc-collapse details.studio-canvas-recently-used-collapse.modus-wc-collapse
   margin: 0;
 }
 
+.studio-canvas-step-error {
+  color: var(--modus-wc-color-error);
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.studio-canvas-node .studio-canvas-step-error,
+.studio-canvas-starter-node .studio-canvas-step-error,
+.studio-canvas-action-node .studio-canvas-step-error {
+  color: var(--modus-wc-color-error);
+  font-size: 12px;
+  font-weight: var(--modus-wc-font-weight-regular);
+  line-height: 1.4;
+}
+
+.studio-canvas-starter-node.has-error,
+.studio-canvas-action-node.has-error,
+.studio-canvas-node.has-error {
+  align-items: flex-start;
+  background-color: var(--modus-wc-color-white);
+  border-color: var(--modus-wc-color-error);
+  box-shadow: none;
+}
+
+.studio-canvas-starter-node.has-error.is-flow-active,
+.studio-canvas-action-node.has-error.is-flow-active {
+  background-color: var(--modus-wc-color-white);
+  border-color: var(--modus-wc-color-error);
+  box-shadow: none;
+}
+
+.studio-canvas-starter-node.has-error .studio-canvas-starter-node-icon,
+.studio-canvas-action-node.has-error .studio-canvas-starter-node-icon {
+  margin-top: 2px;
+}
+
 .studio-canvas-empty-state {
   align-items: center;
   background-color: var(--modus-wc-color-base-100);
@@ -2412,6 +2477,11 @@ modus-wc-collapse details.studio-canvas-recently-used-collapse.modus-wc-collapse
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.studio-canvas-properties-config-field modus-wc-text-input {
+  display: block;
+  width: 100%;
 }
 
 .studio-canvas-properties-field-helper {

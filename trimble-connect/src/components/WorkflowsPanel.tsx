@@ -16,6 +16,7 @@ import {
   type StepId,
 } from './flowStepConfig';
 import type { DiscoverFlow } from './FlowDetailView';
+import { buildPanelWorkflowCanvasPayload, type PanelWorkflowCanvasPayload } from '../workflows-studio/panelWorkflowBridge';
 
 type WorkflowsTab = 'discover' | 'flows' | 'activity';
 
@@ -23,6 +24,7 @@ interface WorkflowsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenStudio: () => void;
+  onEditFlowInStudio: (payload: PanelWorkflowCanvasPayload) => void;
 }
 
 const tabs: { id: WorkflowsTab; label: string }[] = [
@@ -36,7 +38,7 @@ type FlowActivationState = 'idle' | 'loading' | 'success';
 
 const TURN_ON_DELAY_MS = 2000;
 
-export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: WorkflowsPanelProps) {
+export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio, onEditFlowInStudio }: WorkflowsPanelProps) {
   const [activeTab, setActiveTab] = useState<WorkflowsTab>('discover');
   const [flowDetailReturnTab, setFlowDetailReturnTab] = useState<WorkflowsTab>('discover');
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
@@ -278,6 +280,24 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
     setSelectedStepId(null);
   };
 
+  const handleEditInStudio = () => {
+    if (!selectedFlow) {
+      return;
+    }
+
+    const payload = buildPanelWorkflowCanvasPayload(
+      selectedFlow.id,
+      getFlowTitle(selectedFlow, selectedFlowInstanceId ?? undefined),
+      flowStepValues[selectedFlow.id] ?? {},
+    );
+
+    if (!payload) {
+      return;
+    }
+
+    onEditFlowInStudio(payload);
+  };
+
   const handleTurnOn = () => {
     if (!selectedFlowId || flowActivationState === 'loading') {
       return;
@@ -474,6 +494,7 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio }: Workfl
         ) : showFlowOverview ? (
           <FlowDetailFooter
             isActive={isSelectedFlowActive}
+            onEditInStudio={handleEditInStudio}
             onTurnOn={handleTurnOn}
             isLoading={flowActivationState === 'loading'}
           />

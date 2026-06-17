@@ -10,22 +10,35 @@ import {
   type WorkflowGenerationPhase,
   type WorkflowModel,
 } from './workflowGenerator';
+import type { PanelWorkflowCanvasPayload } from './panelWorkflowBridge';
 import './WorkflowsStudio.css';
 
 interface WorkflowsStudioAppProps {
   onBack: () => void;
   initialMode?: StudioViewportMode;
+  panelWorkflow?: PanelWorkflowCanvasPayload | null;
 }
 
-export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }: WorkflowsStudioAppProps) {
+export default function WorkflowsStudioApp({
+  onBack,
+  initialMode = 'dashboard',
+  panelWorkflow = null,
+}: WorkflowsStudioAppProps) {
   const [sideNavExpanded, setSideNavExpanded] = useState(false);
   const [workspaceTab, setWorkspaceTab] = useState<StudioWorkspaceTab>('discover');
-  const [view, setView] = useState<StudioView>(initialMode === 'canvas' ? 'canvas' : 'discover');
+  const [view, setView] = useState<StudioView>(
+    panelWorkflow || initialMode === 'canvas' ? 'canvas' : 'discover',
+  );
   const [selectedTemplate, setSelectedTemplate] = useState<StudioTemplate | null>(null);
   const [canvasMode, setCanvasMode] = useState<StudioCanvasMode>('edit');
-  const [highlightStartNode, setHighlightStartNode] = useState(initialMode === 'canvas');
+  const [highlightStartNode, setHighlightStartNode] = useState(
+    !panelWorkflow && initialMode === 'canvas',
+  );
   const [assistantPrompt, setAssistantPrompt] = useState('');
   const [generatedWorkflow, setGeneratedWorkflow] = useState<WorkflowModel | null>(null);
+  const [importedPanelWorkflow, setImportedPanelWorkflow] = useState<PanelWorkflowCanvasPayload | null>(
+    panelWorkflow,
+  );
   const [isGeneratingWorkflow, setIsGeneratingWorkflow] = useState(false);
   const [generationPhase, setGenerationPhase] = useState<WorkflowGenerationPhase | null>(null);
 
@@ -37,12 +50,14 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
     setHighlightStartNode(false);
     setAssistantPrompt('');
     setGeneratedWorkflow(null);
+    setImportedPanelWorkflow(null);
   };
 
   const handleCreateNewWorkflow = () => {
     setSelectedTemplate(null);
     setAssistantPrompt('');
     setGeneratedWorkflow(null);
+    setImportedPanelWorkflow(null);
     setHighlightStartNode(true);
     setCanvasMode('edit');
     setView('canvas');
@@ -51,6 +66,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
   const handleGenerateSuccess = (model: WorkflowModel) => {
     setGeneratedWorkflow(model);
     setSelectedTemplate(null);
+    setImportedPanelWorkflow(null);
     setAssistantPrompt(model.prompt);
     setHighlightStartNode(false);
     setCanvasMode('edit');
@@ -74,6 +90,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
     setSelectedTemplate(template);
     setAssistantPrompt('');
     setGeneratedWorkflow(null);
+    setImportedPanelWorkflow(null);
     setHighlightStartNode(false);
     setCanvasMode('edit');
     setView('canvas');
@@ -87,6 +104,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
     setHighlightStartNode(false);
     setAssistantPrompt('');
     setGeneratedWorkflow(null);
+    setImportedPanelWorkflow(null);
   };
 
   const renderContent = () => {
@@ -95,6 +113,7 @@ export default function WorkflowsStudioApp({ onBack, initialMode = 'dashboard' }
         <StudioCanvas
           template={selectedTemplate}
           generatedWorkflow={generatedWorkflow}
+          panelWorkflow={importedPanelWorkflow}
           highlightStartNode={highlightStartNode}
           assistantPrompt={assistantPrompt}
           canvasMode={canvasMode}

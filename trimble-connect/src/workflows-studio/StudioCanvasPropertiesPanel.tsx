@@ -12,6 +12,7 @@ interface StudioCanvasPropertiesPanelProps {
   configValues: Record<string, string>;
   node: WorkflowCanvasNode;
   readOnly?: boolean;
+  showFieldErrors?: boolean;
   onClose: () => void;
   onConfigChange: (fieldId: string, value: string) => void;
 }
@@ -21,6 +22,7 @@ export default function StudioCanvasPropertiesPanel({
   configValues,
   node,
   readOnly = false,
+  showFieldErrors = false,
   onClose,
   onConfigChange,
 }: StudioCanvasPropertiesPanelProps) {
@@ -62,30 +64,41 @@ export default function StudioCanvasPropertiesPanel({
                 Configuration
               </h3>
               <div className="studio-canvas-properties-config-fields">
-                {configFields.map((field) => (
-                  <div key={field.id} className="studio-canvas-properties-config-field">
-                    <ModusWcTextInput
-                      bordered={false}
-                      disabled={readOnly}
-                      inputId={`studio-step-field-${node.id}-${field.id}`}
-                      label={field.label}
-                      placeholder={field.placeholder}
-                      required
-                      value={configValues[field.id] ?? ''}
-                      onInputChange={(event: CustomEvent) => {
-                        if (readOnly) {
-                          return;
-                        }
+                {configFields.map((field) => {
+                  const value = configValues[field.id] ?? '';
+                  const hasError = showFieldErrors && !value.trim();
 
-                        const nextValue = event.detail?.target?.value || '';
-                        onConfigChange(field.id, nextValue);
-                      }}
-                    />
-                    {field.helperText && (
-                      <p className="studio-canvas-properties-field-helper">{field.helperText}</p>
-                    )}
-                  </div>
-                ))}
+                  return (
+                    <div key={field.id} className="studio-canvas-properties-config-field">
+                      <ModusWcTextInput
+                        bordered
+                        disabled={readOnly}
+                        feedback={
+                          hasError
+                            ? { level: 'error', message: 'This required field is missing' }
+                            : undefined
+                        }
+                        inputId={`studio-step-field-${node.id}-${field.id}`}
+                        label={field.label}
+                        placeholder={field.placeholder}
+                        required
+                        size="md"
+                        value={value}
+                        onInputChange={(event: CustomEvent) => {
+                          if (readOnly) {
+                            return;
+                          }
+
+                          const nextValue = event.detail?.target?.value || '';
+                          onConfigChange(field.id, nextValue);
+                        }}
+                      />
+                      {field.helperText && !hasError && (
+                        <p className="studio-canvas-properties-field-helper">{field.helperText}</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </section>
           ) : (

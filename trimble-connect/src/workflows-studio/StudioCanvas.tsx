@@ -24,7 +24,13 @@ import {
 import { findWorkflowActionById } from './workflowActionLibrary';
 import { readActionDragId, isActionDrag, isStarterDrag, readStarterDragId } from './starterDrag';
 import { getStudioStepConfigFields } from './stepConfigFields';
+import {
+  getCanvasValidationTargets,
+  getUnconfiguredCanvasStepIds,
+  isStudioStepConfigured,
+} from './studioStepValidation';
 import { toWorkflowCanvasState, type WorkflowModel } from './workflowGenerator';
+import type { PanelWorkflowCanvasPayload } from './panelWorkflowBridge';
 
 export interface PlacedActionStep {
   instanceId: string;
@@ -88,6 +94,7 @@ function getPlacedActionNodeClasses(
   selectedNodeId: string | null,
   activeFlowSlot: FlowCanvasSlot,
   dropHighlight: DropZoneHighlight,
+  hasError = false,
 ): string {
   return [
     'studio-canvas-starter-node',
@@ -96,9 +103,18 @@ function getPlacedActionNodeClasses(
     selectedNodeId === step.instanceId ? 'is-node-selected' : '',
     dropHighlight === 'valid' ? 'is-drop-zone-valid' : '',
     dropHighlight === 'invalid' ? 'is-drop-zone-invalid' : '',
+    hasError ? 'has-error' : '',
   ]
     .filter(Boolean)
     .join(' ');
+}
+
+function CanvasStepError({ show }: { show: boolean }) {
+  if (!show) {
+    return null;
+  }
+
+  return <p className="studio-canvas-step-error">This step is not fully configured</p>;
 }
 
 export type StudioCanvasMode = 'edit' | 'preview' | 'cloned';
@@ -106,6 +122,7 @@ export type StudioCanvasMode = 'edit' | 'preview' | 'cloned';
 interface StudioCanvasProps {
   template: StudioTemplate | null;
   generatedWorkflow?: WorkflowModel | null;
+  panelWorkflow?: PanelWorkflowCanvasPayload | null;
   highlightStartNode?: boolean;
   assistantPrompt?: string;
   canvasMode?: StudioCanvasMode;
@@ -167,6 +184,7 @@ function resolveTemplateStepNode(step: StudioTemplateStep, index: number): Workf
 export default function StudioCanvas({
   template,
   generatedWorkflow = null,
+  panelWorkflow = null,
   highlightStartNode = false,
   assistantPrompt = '',
   canvasMode = 'edit',
@@ -187,6 +205,8 @@ export default function StudioCanvas({
   const [panelHighlightedActionId, setPanelHighlightedActionId] = useState<string | null>(null);
   const [panelHighlightedStarterId, setPanelHighlightedStarterId] = useState<string | null>(null);
   const [stepConfigValues, setStepConfigValues] = useState<Record<string, Record<string, string>>>({});
+  const [invalidStepIds, setInvalidStepIds] = useState<Set<string>>(new Set());
+  const [showSaveFieldErrors, setShowSaveFieldErrors] = useState(false);
   const isReadOnlyCanvas = canvasMode === 'preview';
   const showConfigurationRequired = canvasMode === 'cloned';
   const configurationRequiredStepIds = template?.configurationRequiredStepIds ?? [];
@@ -215,6 +235,24 @@ export default function StudioCanvas({
       canvasState.actionSteps[canvasState.actionSteps.length - 1]?.item.id ?? null,
     );
   }, [generatedWorkflow]);
+
+  useEffect(() => {
+    if (!panelWorkflow) {
+      return;
+    }
+
+    setWorkflowTitle(panelWorkflow.title);
+    setStarterStep(panelWorkflow.starterStep);
+    setActionSteps(panelWorkflow.actionSteps);
+    setStepConfigValues(panelWorkflow.stepConfigValues);
+    setActiveFlowSlot('action');
+    setSelectedNodeId(panelWorkflow.selectedNodeId);
+    setPropertiesPanelOpen(Boolean(panelWorkflow.selectedNodeId));
+    setPanelHighlightedStarterId(panelWorkflow.starterStep?.id ?? null);
+    setPanelHighlightedActionId(
+      panelWorkflow.actionSteps[panelWorkflow.actionSteps.length - 1]?.item.id ?? null,
+    );
+  }, [panelWorkflow]);
 
   useEffect(() => {
     if (!template?.steps.length) {
@@ -326,6 +364,31 @@ export default function StudioCanvas({
     ? (stepConfigValues[propertiesNode.id] ?? {})
     : {};
   const showPropertiesPanel = propertiesPanelOpen && propertiesNode !== null;
+  const selectedStepHasError = propertiesNode ? invalidStepIds.has(propertiesNode.id) : false;
+
+  const resolveLibraryStepId = (): string | null => {
+    if (!propertiesNode) {
+      return null;
+    }
+
+    if (!isBlankWorkflow) {
+      if (selectedPlacedAction) {
+        return selectedPlacedAction.item.id;
+      }
+
+      return propertiesNode.id;
+    }
+
+    if (starterStep && selectedNodeId === starterStep.id) {
+      return starterStep.id;
+    }
+
+    if (selectedPlacedAction) {
+      return selectedPlacedAction.item.id;
+    }
+
+    return null;
+  };
 
   const focusStarterSlot = () => {
     setActiveFlowSlot('starter');
@@ -375,6 +438,11 @@ export default function StudioCanvas({
     setActiveFlowSlot('action');
     setSelectedNodeId(item.id);
     setPropertiesPanelOpen(true);
+    setInvalidStepIds((current) => {
+      const next = new Set(current);
+      next.delete(FLOW_STARTER_SLOT_ID);
+      return next;
+    });
   };
 
   const handlePanelStarterClick = (item: OperationItem) => {
@@ -399,18 +467,82 @@ export default function StudioCanvas({
     setPropertiesPanelOpen(true);
   };
 
+  const focusInvalidStep = (stepId: string) => {
+    if (stepId === FLOW_STARTER_SLOT_ID || stepId === starterStep?.id) {
+      focusStarterSlot();
+      return;
+    }
+
+    const actionStep = actionSteps.find((step) => step.instanceId === stepId);
+    if (actionStep) {
+      focusPlacedActionStep(actionStep);
+      return;
+    }
+
+    const templateNode = canvasNodes.find((node) => node.id === stepId);
+    if (templateNode) {
+      handleSelectNode(templateNode);
+    }
+  };
+
+  const handleSave = () => {
+    const validationTargets = getCanvasValidationTargets(
+      isBlankWorkflow,
+      starterStep,
+      actionSteps,
+      canvasNodes,
+    );
+    const unconfiguredStepIds = getUnconfiguredCanvasStepIds(
+      validationTargets,
+      stepConfigValues,
+      hasStarterStep,
+    );
+
+    if (unconfiguredStepIds.length > 0) {
+      setInvalidStepIds(new Set(unconfiguredStepIds));
+      setShowSaveFieldErrors(true);
+      focusInvalidStep(unconfiguredStepIds[0]);
+      return;
+    }
+
+    setInvalidStepIds(new Set());
+    setShowSaveFieldErrors(false);
+  };
+
   const handleConfigChange = (fieldId: string, value: string) => {
     if (!propertiesNode) {
       return;
     }
 
+    const nextValues = {
+      ...(stepConfigValues[propertiesNode.id] ?? {}),
+      [fieldId]: value,
+    };
+
     setStepConfigValues((current) => ({
       ...current,
-      [propertiesNode.id]: {
-        ...(current[propertiesNode.id] ?? {}),
-        [fieldId]: value,
-      },
+      [propertiesNode.id]: nextValues,
     }));
+
+    if (!invalidStepIds.has(propertiesNode.id)) {
+      return;
+    }
+
+    const libraryStepId = resolveLibraryStepId();
+    if (
+      libraryStepId &&
+      isStudioStepConfigured(
+        libraryStepId,
+        Boolean(propertiesNode.isStarter),
+        nextValues,
+      )
+    ) {
+      setInvalidStepIds((current) => {
+        const next = new Set(current);
+        next.delete(propertiesNode.id);
+        return next;
+      });
+    }
   };
 
   const handleStarterDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -498,12 +630,16 @@ export default function StudioCanvas({
     .filter(Boolean)
     .join(' ');
 
+  const starterNodeId = starterStep?.id ?? FLOW_STARTER_SLOT_ID;
+  const starterHasError = invalidStepIds.has(starterNodeId);
+
   const starterNodeClasses = [
     'studio-canvas-starter-node',
     activeFlowSlot === 'starter' ? 'is-flow-active' : '',
     starterStep && selectedNodeId === starterStep.id ? 'is-node-selected' : '',
     starterDropHighlight === 'valid' ? 'is-drop-zone-valid' : '',
     starterDropHighlight === 'invalid' ? 'is-drop-zone-invalid' : '',
+    starterHasError ? 'has-error' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -628,7 +764,13 @@ export default function StudioCanvas({
               <ModusWcIcon decorative name="play_circle" size="sm" variant="solid" />
               Test Run
             </ModusWcButton>
-            <ModusWcButton color="primary" size="sm" variant="filled" onButtonClick={() => undefined}>
+            <ModusWcButton
+              color="primary"
+              customClass="studio-canvas-toolbar-save-btn"
+              size="sm"
+              variant="filled"
+              onButtonClick={handleSave}
+            >
               Save
             </ModusWcButton>
             <ModusWcButton
@@ -737,13 +879,17 @@ export default function StudioCanvas({
                         <p className="studio-canvas-starter-node-title">
                           {starterStep?.label ?? 'Choose a starter'}
                         </p>
-                        <p className="studio-canvas-starter-node-hint">
-                          {hasStarterStep
-                            ? 'Selected trigger. Choose the next action below.'
-                            : activeFlowSlot === 'starter' && (
-                              <BrowseHint onBrowse={() => setStarterBrowseOpen(true)} />
-                            )}
-                        </p>
+                        {starterHasError ? (
+                          <CanvasStepError show />
+                        ) : (
+                          <p className="studio-canvas-starter-node-hint">
+                            {hasStarterStep
+                              ? 'Selected trigger. Choose the next action below.'
+                              : activeFlowSlot === 'starter' && (
+                                <BrowseHint onBrowse={() => setStarterBrowseOpen(true)} />
+                              )}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -771,6 +917,7 @@ export default function StudioCanvas({
                                 selectedNodeId,
                                 activeFlowSlot,
                                 'none',
+                                invalidStepIds.has(step.instanceId),
                               )}
                               role="button"
                               tabIndex={0}
@@ -797,6 +944,7 @@ export default function StudioCanvas({
                                 <p className="studio-canvas-starter-node-title">
                                   Step {index + 1}: {step.item.label}
                                 </p>
+                                <CanvasStepError show={invalidStepIds.has(step.instanceId)} />
                               </div>
                             </div>
                           </div>
@@ -849,7 +997,7 @@ export default function StudioCanvas({
                         type="button"
                         className={`studio-canvas-node ${node.isStarter ? 'is-starter' : ''}${
                           selectedNodeId === node.id ? ' is-node-selected' : ''
-                        }`}
+                        }${invalidStepIds.has(node.id) ? ' has-error' : ''}`}
                         onClick={() => handleSelectNode(node)}
                       >
                         {node.isStarter ? (
@@ -859,6 +1007,7 @@ export default function StudioCanvas({
                         )}
                         <div className="studio-canvas-node-copy">
                           <p>{node.label}</p>
+                          <CanvasStepError show={invalidStepIds.has(node.id)} />
                           {showConfigurationRequired && configurationRequiredStepIds.includes(node.id) && (
                             <span className="studio-config-required-tag">Configuration Required</span>
                           )}
@@ -874,13 +1023,16 @@ export default function StudioCanvas({
                         type="button"
                         className={`studio-canvas-node${
                           selectedNodeId === step.instanceId ? ' is-node-selected' : ''
-                        }`}
+                        }${invalidStepIds.has(step.instanceId) ? ' has-error' : ''}`}
                         onClick={() => focusPlacedActionStep(step)}
                       >
                         <span className="studio-canvas-node-index">
                           {templateActionStepCount + index + 1}
                         </span>
-                        <p>{step.item.label}</p>
+                        <div className="studio-canvas-node-copy">
+                          <p>{step.item.label}</p>
+                          <CanvasStepError show={invalidStepIds.has(step.instanceId)} />
+                        </div>
                       </button>
                     </div>
                   ))}
@@ -934,6 +1086,7 @@ export default function StudioCanvas({
             configValues={propertiesConfigValues}
             node={propertiesNode}
             readOnly={isReadOnlyCanvas}
+            showFieldErrors={showSaveFieldErrors && selectedStepHasError}
             onConfigChange={handleConfigChange}
             onClose={() => setPropertiesPanelOpen(false)}
           />

@@ -4,6 +4,7 @@ import { ModusWcLoader } from '@trimble-oss/moduswebcomponents-react';
 interface WorkflowsPrimaryButtonProps {
   children: ReactNode;
   onClick: () => void;
+  customClass?: string;
   disabled?: boolean;
   loading?: boolean;
   loadingLabel?: string;
@@ -13,6 +14,7 @@ interface WorkflowsPrimaryButtonProps {
 export default function WorkflowsPrimaryButton({
   children,
   onClick,
+  customClass = '',
   disabled = false,
   loading = false,
   loadingLabel = 'Turning on…',
@@ -21,7 +23,7 @@ export default function WorkflowsPrimaryButton({
   return (
     <button
       type="button"
-      className={`workflows-primary-btn ${fullWidth ? 'workflows-primary-btn--full' : ''}`}
+      className={`workflows-primary-btn ${fullWidth ? 'workflows-primary-btn--full' : ''} ${customClass}`.trim()}
       onClick={onClick}
       disabled={disabled || loading}
       aria-busy={loading}

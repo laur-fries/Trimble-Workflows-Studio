@@ -62,7 +62,12 @@ function TemplateGroupCollapse({
       <div slot="content" className="studio-canvas-category-content studio-canvas-category-content--actions">
         <div className="studio-template-grid studio-template-group-content">
           {sortedTemplates.map((template) => (
-            <StudioTemplateCard key={template.id} template={template} onUseTemplate={onUseTemplate} />
+            <StudioTemplateCard
+              key={template.id}
+              groupId={group.id}
+              template={template}
+              onUseTemplate={onUseTemplate}
+            />
           ))}
         </div>
       </div>

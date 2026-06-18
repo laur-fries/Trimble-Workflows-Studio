@@ -12,6 +12,8 @@ import {
 } from './data';
 import StudioStarterPicker from './StudioStarterPicker';
 import StudioWorkflowActionPicker from './StudioWorkflowActionPicker';
+import StudioProductIcon from './StudioProductIcon';
+import { resolveActionProduct } from './studioProductIcons';
 import { setActionDragData } from './starterDrag';
 import { getAllWorkflowActions } from './workflowActionLibrary';
 
@@ -36,6 +38,7 @@ function RecentlyUsedItem({
   onSelect?: (item: WorkflowActionItem) => void;
 }) {
   const didDragRef = useRef(false);
+  const product = resolveActionProduct(item);
 
   return (
     <button
@@ -59,6 +62,7 @@ function RecentlyUsedItem({
         setActionDragData(event, item.id);
       }}
     >
+      {product ? <StudioProductIcon product={product} className="studio-product-icon studio-product-icon--compact" /> : null}
       <span className="studio-canvas-recent-item-label">{item.label}</span>
       <ModusWcIcon decorative name="drag_indicator" size="sm" customClass="studio-canvas-recent-drag" />
     </button>

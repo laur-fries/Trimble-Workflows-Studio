@@ -400,13 +400,13 @@ export const workflowStarterGroups: WorkflowStarterGroup[] = [
         id: 'starter-file-created',
         label: 'When a File is Created',
         icon: 'file',
-        connector: 'Trimble Connect or ACC Docs',
+        connector: 'Trimble Connect',
       },
       {
         id: 'starter-file-updated',
         label: 'When a File is Updated',
         icon: 'cloud_upload',
-        connector: 'Trimble Connect or ACC Docs',
+        connector: 'Trimble Connect',
       },
       {
         id: 'starter-bcf-topic-created',

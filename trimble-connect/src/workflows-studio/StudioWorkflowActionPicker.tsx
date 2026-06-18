@@ -10,6 +10,8 @@ import {
   ModusWcTextInput,
 } from '@trimble-oss/moduswebcomponents-react';
 import type { WorkflowActionCategory, WorkflowActionItem } from './data';
+import StudioProductIcon from './StudioProductIcon';
+import { resolveActionProduct } from './studioProductIcons';
 import { setActionDragData } from './starterDrag';
 import {
   getGroupedWorkflowActionCategories,
@@ -87,6 +89,7 @@ function ActionLibraryItem({
 }) {
   const didDragRef = useRef(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const product = resolveActionProduct(item);
   const description = item.description ?? item.tags?.join(' · ') ?? '';
   const descriptionPreviewLimit = 110;
   const canExpandDescription = description.length > descriptionPreviewLimit;
@@ -124,6 +127,7 @@ function ActionLibraryItem({
       }}
     >
       <div className="studio-canvas-action-card-header">
+        {product ? <StudioProductIcon product={product} /> : null}
         <span className="studio-canvas-action-card-title">{item.label}</span>
       </div>
 

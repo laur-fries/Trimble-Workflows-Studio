@@ -12,6 +12,8 @@ import {
   type WorkflowStarterGroup,
   type WorkflowStarterItem,
 } from './data';
+import StudioProductIcon from './StudioProductIcon';
+import { resolveStarterProduct } from './studioProductIcons';
 import { setStarterDragData } from './starterDrag';
 
 interface StudioStarterPickerProps {
@@ -53,6 +55,7 @@ function StarterStepOption({
   onSelect: (item: WorkflowStarterItem) => void;
 }) {
   const didDragRef = useRef(false);
+  const product = resolveStarterProduct(item);
 
   return (
     <div
@@ -83,8 +86,15 @@ function StarterStepOption({
       }}
     >
       <div className="studio-canvas-starter-option-header">
-        <span className="studio-canvas-starter-option-icon" aria-hidden="true">
-          <ModusWcIcon decorative name={item.icon} size="sm" variant="solid" />
+        <span
+          className={`studio-canvas-starter-option-icon${product ? ' studio-canvas-starter-option-icon--product' : ''}`}
+          aria-hidden="true"
+        >
+          {product ? (
+            <StudioProductIcon product={product} />
+          ) : (
+            <ModusWcIcon decorative name={item.icon} size="sm" variant="solid" />
+          )}
         </span>
         <span className="studio-canvas-action-card-title">{item.label}</span>
       </div>

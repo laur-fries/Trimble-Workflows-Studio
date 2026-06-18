@@ -17,6 +17,7 @@ import {
 } from './flowStepConfig';
 import type { DiscoverFlow } from './FlowDetailView';
 import { buildPanelWorkflowCanvasPayload, type PanelWorkflowCanvasPayload } from '../workflows-studio/panelWorkflowBridge';
+import StudioProductIcon from '../workflows-studio/StudioProductIcon';
 
 type WorkflowsTab = 'discover' | 'flows' | 'activity';
 
@@ -461,7 +462,13 @@ export default function WorkflowsPanel({ isOpen, onClose, onOpenStudio, onEditFl
                     tabIndex={0}
                   >
                     <p className="workflows-card-category">{flow.category}</p>
-                    <h4 className="workflows-card-title">{getFlowTitle(flow)}</h4>
+                    <div className="workflows-card-header">
+                      <StudioProductIcon
+                        product="connect"
+                        className="workflows-card-product-icon"
+                      />
+                      <h4 className="workflows-card-title">{getFlowTitle(flow)}</h4>
+                    </div>
                     <div className="workflows-card-icons">
                       {flow.icons.map((icon) => (
                         <span key={icon} className="workflows-card-icon">

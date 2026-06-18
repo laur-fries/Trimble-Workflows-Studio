@@ -47,6 +47,14 @@ export default function StudioDashboard({
     [selectedGroupIds, templateSearchQuery],
   );
 
+  const catalogGroupsKey = useMemo(() => {
+    if (selectedGroupIds.size === 0) {
+      return 'all';
+    }
+
+    return Array.from(selectedGroupIds).sort().join('|');
+  }, [selectedGroupIds]);
+
   const toggleGroupFilter = (groupId: string) => {
     setSelectedGroupIds((current) => {
       const next = new Set(current);
@@ -142,6 +150,7 @@ export default function StudioDashboard({
           <p className="studio-template-empty-results">No templates match your search.</p>
         ) : (
           <StudioTemplateCatalogGroups
+            key={catalogGroupsKey}
             groups={filteredTemplateGroups}
             viewMode={viewMode}
             sortDirection={sortDirection}

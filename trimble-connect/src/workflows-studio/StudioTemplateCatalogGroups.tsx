@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ModusWcAccordion,
   ModusWcButton,
@@ -42,10 +42,15 @@ function TemplateGroupCollapse({
   return (
     <ModusWcCollapse
       bordered={false}
-      collapseId={`studio-template-group-${group.id}`}
+      collapseId={`studio-template-catalog-${group.id}`}
       customClass="studio-template-group-collapse"
       expanded={expanded}
-      onExpandedChange={(event) => onExpandedChange(event.detail.expanded)}
+      onExpandedChange={(event) => {
+        const expandedState = event.detail?.expanded;
+        if (typeof expandedState === 'boolean') {
+          onExpandedChange(expandedState);
+        }
+      }}
     >
       <div slot="header" className="studio-template-group-header">
         <div className="studio-template-group-header-copy">
@@ -109,6 +114,8 @@ export default function StudioTemplateCatalogGroups({
     Object.fromEntries(groups.map((group) => [group.id, true])),
   );
 
+  const visibleGroupKey = useMemo(() => groups.map((group) => group.id).join('|'), [groups]);
+
   const isGroupExpanded = (groupId: string) => expandedGroups[groupId] ?? true;
 
   const allGroupsExpanded = useMemo(
@@ -124,20 +131,6 @@ export default function StudioTemplateCatalogGroups({
   const setAllGroupsExpanded = (expanded: boolean) => {
     setExpandedGroups(Object.fromEntries(groups.map((group) => [group.id, expanded])));
   };
-
-  useEffect(() => {
-    setExpandedGroups((current) => {
-      const next = { ...current };
-
-      groups.forEach((group) => {
-        if (!(group.id in next)) {
-          next[group.id] = true;
-        }
-      });
-
-      return next;
-    });
-  }, [groups]);
 
   return (
     <div className="studio-template-catalog-groups">
@@ -209,7 +202,10 @@ export default function StudioTemplateCatalogGroups({
         </div>
       </div>
 
-      <ModusWcAccordion customClass="studio-template-groups-accordion">
+      <ModusWcAccordion
+        key={`studio-template-groups-${visibleGroupKey}`}
+        customClass="studio-template-groups-accordion"
+      >
         {groups.map((group) => (
           <TemplateGroupCollapse
             key={group.id}

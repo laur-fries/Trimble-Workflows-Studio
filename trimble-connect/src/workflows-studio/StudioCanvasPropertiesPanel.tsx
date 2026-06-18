@@ -35,6 +35,16 @@ export default function StudioCanvasPropertiesPanel({
 }: StudioCanvasPropertiesPanelProps) {
   return (
     <aside className="studio-canvas-properties-panel" aria-label="Node properties">
+      <button
+        type="button"
+        className="studio-canvas-properties-collapse-rail"
+        aria-label="Collapse properties panel"
+        onClick={onClose}
+      >
+        <ModusWcIcon decorative name="caret_left" size="sm" />
+        <span className="studio-canvas-properties-collapse-label">Properties</span>
+      </button>
+
       <div className="studio-canvas-properties-panel-main">
         <div className="studio-canvas-properties-panel-header">
           <ModusWcTypography hierarchy="h5" weight="semibold" customClass="studio-canvas-properties-panel-title">
@@ -123,16 +133,6 @@ export default function StudioCanvasPropertiesPanel({
           </footer>
         ) : null}
       </div>
-
-      <button
-        type="button"
-        className="studio-canvas-properties-collapse-rail"
-        aria-label="Collapse properties panel"
-        onClick={onClose}
-      >
-        <ModusWcIcon decorative name="caret_right" size="sm" />
-        <span className="studio-canvas-properties-collapse-label">Properties</span>
-      </button>
     </aside>
   );
 }

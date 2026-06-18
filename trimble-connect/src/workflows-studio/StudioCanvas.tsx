@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ModusWcBadge,
   ModusWcButton,
   ModusWcIcon,
+  ModusWcTextInput,
   ModusWcTypography,
 } from '@trimble-oss/moduswebcomponents-react';
+import StudioCanvasAiBlueprintBadge from './StudioCanvasAiBlueprintBadge';
 import StudioChooseActionModal from './StudioChooseActionModal';
 import StudioChooseStarterModal from './StudioChooseStarterModal';
 import StudioCanvasPropertiesPanel from './StudioCanvasPropertiesPanel';
@@ -134,9 +136,11 @@ interface StudioCanvasProps {
   savedWorkflowId?: string | null;
   highlightStartNode?: boolean;
   assistantPrompt?: string;
+  assistantGeneratedAt?: string | null;
   canvasMode?: StudioCanvasMode;
   onBack?: () => void;
   onCloneTemplate?: () => void;
+  onRefineAssistantPrompt?: (refinement: string) => void | Promise<void>;
   onSaveWorkflow?: (workflow: StudioSavedWorkflow) => void;
 }
 
@@ -199,12 +203,17 @@ export default function StudioCanvas({
   savedWorkflowId = null,
   highlightStartNode = false,
   assistantPrompt = '',
+  assistantGeneratedAt = null,
   canvasMode = 'edit',
   onBack,
   onCloneTemplate,
+  onRefineAssistantPrompt,
   onSaveWorkflow,
 }: StudioCanvasProps) {
   const [workflowTitle, setWorkflowTitle] = useState(template?.title ?? 'Untitled Workflow');
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [draftTitle, setDraftTitle] = useState(workflowTitle);
+  const titleInputRef = useRef<HTMLModusWcTextInputElement>(null);
   const [stepsPanelOpen, setStepsPanelOpen] = useState(true);
   const [propertiesPanelOpen, setPropertiesPanelOpen] = useState(false);
   const [activeFlowSlot, setActiveFlowSlot] = useState<FlowCanvasSlot>('starter');
@@ -327,6 +336,57 @@ export default function StudioCanvas({
     window.addEventListener('dragend', resetDropHighlights);
     return () => window.removeEventListener('dragend', resetDropHighlights);
   }, []);
+
+  useEffect(() => {
+    if (!isEditingTitle) {
+      setDraftTitle(workflowTitle);
+    }
+  }, [workflowTitle, isEditingTitle]);
+
+  useEffect(() => {
+    if (!isEditingTitle) {
+      return;
+    }
+
+    const input = titleInputRef.current?.shadowRoot?.querySelector('input');
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    input.select();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        input.blur();
+      }
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setDraftTitle(workflowTitle);
+        setIsEditingTitle(false);
+      }
+    };
+
+    input.addEventListener('keydown', handleKeyDown);
+    return () => input.removeEventListener('keydown', handleKeyDown);
+  }, [isEditingTitle, workflowTitle]);
+
+  const startEditingTitle = () => {
+    setDraftTitle(workflowTitle);
+    setIsEditingTitle(true);
+  };
+
+  const commitTitle = () => {
+    const trimmedTitle = draftTitle.trim();
+    if (trimmedTitle) {
+      setWorkflowTitle(trimmedTitle);
+    } else {
+      setDraftTitle(workflowTitle);
+    }
+    setIsEditingTitle(false);
+  };
 
   const templateSteps = template?.steps ?? [];
   const isBlankWorkflow = templateSteps.length === 0;
@@ -838,25 +898,39 @@ export default function StudioCanvas({
           </ModusWcButton>
 
           <div className="studio-canvas-title-group">
-            <ModusWcTypography hierarchy="h4" weight="semibold" customClass="studio-canvas-title">
-              {workflowTitle}
-            </ModusWcTypography>
-            {!isReadOnlyCanvas && (
-              <ModusWcButton
-                aria-label="Edit workflow name"
-                color="tertiary"
-                onButtonClick={() => {
-                  const nextTitle = window.prompt('Workflow name', workflowTitle);
-                  if (nextTitle?.trim()) {
-                    setWorkflowTitle(nextTitle.trim());
-                  }
-                }}
-                shape="square"
-                size="sm"
-                variant="borderless"
-              >
-                <ModusWcIcon decorative name="pencil" size="sm" />
-              </ModusWcButton>
+            {isEditingTitle ? (
+              <div className="studio-canvas-title-input">
+                <ModusWcTextInput
+                  ref={titleInputRef}
+                  bordered={false}
+                  customClass="studio-canvas-title-input-field"
+                  inputId="studio-canvas-workflow-title"
+                  size="md"
+                  value={draftTitle}
+                  onInputBlur={commitTitle}
+                  onInputChange={(event: CustomEvent) => {
+                    setDraftTitle(event.detail?.target?.value || '');
+                  }}
+                />
+              </div>
+            ) : (
+              <>
+                <ModusWcTypography hierarchy="h4" weight="semibold" customClass="studio-canvas-title">
+                  {workflowTitle}
+                </ModusWcTypography>
+                {!isReadOnlyCanvas && (
+                  <ModusWcButton
+                    aria-label="Edit workflow name"
+                    color="tertiary"
+                    onButtonClick={startEditingTitle}
+                    shape="square"
+                    size="sm"
+                    variant="borderless"
+                  >
+                    <ModusWcIcon decorative name="pencil" size="sm" />
+                  </ModusWcButton>
+                )}
+              </>
             )}
             <ModusWcBadge color="primary" size="sm" variant="filled" customClass="studio-canvas-version-badge">
               {template?.version ?? 'v0.1 Draft'}
@@ -930,11 +1004,13 @@ export default function StudioCanvas({
         )}
 
         <section className="studio-canvas-workspace" aria-label="Workflow canvas">
-          {assistantPrompt && (
-            <p className="studio-canvas-assistant-banner">
-              Trimble Assistant: {assistantPrompt}
-            </p>
-          )}
+          {assistantPrompt ? (
+            <StudioCanvasAiBlueprintBadge
+              generatedAt={assistantGeneratedAt ?? generatedWorkflow?.generatedAt ?? null}
+              prompt={assistantPrompt}
+              onRefinePrompt={isReadOnlyCanvas ? undefined : onRefineAssistantPrompt}
+            />
+          ) : null}
 
           <div className="studio-canvas-main">
             <div className="studio-canvas-grid studio-canvas-grid--centered">

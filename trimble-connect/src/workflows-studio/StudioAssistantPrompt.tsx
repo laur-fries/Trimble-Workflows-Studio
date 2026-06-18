@@ -5,6 +5,7 @@ import {
 } from '@trimble-oss/moduswebcomponents-react';
 import StudioAiDisclaimer from './StudioAiDisclaimer';
 import StudioAiStarsIcon from './StudioAiStarsIcon';
+import StudioAssistantHeroFingerprint from './StudioAssistantHeroFingerprint';
 import StudioMagicWandIcon from './StudioMagicWandIcon';
 import {
   getWorkflowGenerationPhaseLabel,
@@ -93,6 +94,10 @@ export default function StudioAssistantPrompt({
   return (
     <section className="studio-assistant-hero" aria-label="Trimble Assistant">
       <div className="studio-assistant-hero-content">
+        <StudioAssistantHeroFingerprint side="left" />
+        <StudioAssistantHeroFingerprint side="right" />
+
+        <div className="studio-assistant-hero-content-inner">
         <h2 className="studio-assistant-hero-title">
           What process would you like to automate today?
         </h2>
@@ -154,6 +159,8 @@ export default function StudioAssistantPrompt({
           ) : null}
         </div>
 
+        <StudioAiDisclaimer />
+
         {!isGenerating ? (
           <div className="studio-assistant-sample-prompt">
             <button
@@ -165,8 +172,7 @@ export default function StudioAssistantPrompt({
             </button>
           </div>
         ) : null}
-
-        <StudioAiDisclaimer />
+        </div>
       </div>
     </section>
   );

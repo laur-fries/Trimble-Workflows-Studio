@@ -125,6 +125,19 @@ export default function WorkflowsStudioApp({
     }
   };
 
+  const handleRefineAssistantPrompt = async (refinement: string) => {
+    setIsGeneratingWorkflow(true);
+    setGenerationPhase('thinking');
+
+    try {
+      const model = await generateWorkflow(refinement, setGenerationPhase);
+      handleGenerateSuccess(model);
+    } finally {
+      setIsGeneratingWorkflow(false);
+      setGenerationPhase(null);
+    }
+  };
+
   const handleUseTemplate = (template: StudioTemplate) => {
     resetCanvasSession();
     setSelectedTemplate(template);
@@ -180,8 +193,10 @@ export default function WorkflowsStudioApp({
           savedWorkflowId={editingWorkflowId}
           highlightStartNode={highlightStartNode}
           assistantPrompt={assistantPrompt}
+          assistantGeneratedAt={generatedWorkflow?.generatedAt ?? null}
           canvasMode={canvasMode}
           onBack={handleBackFromCanvas}
+          onRefineAssistantPrompt={handleRefineAssistantPrompt}
           onSaveWorkflow={handleSaveWorkflow}
         />
       );

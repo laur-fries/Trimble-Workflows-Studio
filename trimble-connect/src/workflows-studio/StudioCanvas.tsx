@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ModusWcBadge,
   ModusWcButton,
+  ModusWcDropdownMenu,
   ModusWcIcon,
+  ModusWcMenuItem,
   ModusWcTextInput,
   ModusWcTypography,
 } from '@trimble-oss/moduswebcomponents-react';
@@ -124,6 +126,55 @@ function CanvasStepError({ show }: { show: boolean }) {
   }
 
   return <p className="studio-canvas-step-error">This step is not fully configured</p>;
+}
+
+function closeCanvasStepMenu(event: CustomEvent<{ value: string }>) {
+  const menuItem = event.target as HTMLElement | null;
+  const dropdown = menuItem?.closest('modus-wc-dropdown-menu') as
+    | (HTMLElement & { menuVisible?: boolean })
+    | null;
+
+  if (dropdown) {
+    dropdown.menuVisible = false;
+  }
+}
+
+function CanvasPlacedActionStepMenu({
+  stepLabel,
+  onDelete,
+}: {
+  stepLabel: string;
+  onDelete: () => void;
+}) {
+  return (
+    <div
+      className="studio-canvas-step-menu"
+      onClick={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      <ModusWcDropdownMenu
+        buttonVariant="borderless"
+        buttonSize="sm"
+        buttonAriaLabel={`More actions for ${stepLabel}`}
+        menuPlacement="bottom-end"
+        menuBordered
+        customClass="studio-canvas-step-menu-dropdown"
+      >
+        <ModusWcIcon slot="button" decorative name="more_vertical" size="sm" />
+        <div slot="menu">
+          <ModusWcMenuItem
+            customClass="studio-canvas-step-menu-delete"
+            label="Delete step"
+            value="delete"
+            onItemSelect={(event) => {
+              closeCanvasStepMenu(event);
+              onDelete();
+            }}
+          />
+        </div>
+      </ModusWcDropdownMenu>
+    </div>
+  );
 }
 
 export type StudioCanvasMode = 'edit' | 'preview' | 'cloned';
@@ -290,9 +341,14 @@ export default function StudioCanvas({
       setStarterStep(null);
       setActionSteps([]);
       setActiveFlowSlot('action');
-      const firstStepId = restoredWorkflow.templateSteps?.[0]?.stepId ?? null;
+      const templateSteps = restoredWorkflow.templateSteps ?? [];
+      const firstActionStep = templateSteps.find((step) => step.isStarter !== true) ?? templateSteps[0];
+      const firstStepId = firstActionStep?.stepId ?? null;
       setSelectedNodeId(firstStepId);
       setPropertiesPanelOpen(Boolean(firstStepId));
+      if (firstActionStep && !firstActionStep.isStarter) {
+        setPanelHighlightedActionId(firstActionStep.stepId);
+      }
       return;
     }
 
@@ -321,10 +377,16 @@ export default function StudioCanvas({
       return;
     }
 
-    const firstStep = resolveTemplateStepNode(template.steps[0], 0);
+    const nodes = template.steps.map((step, index) => resolveTemplateStepNode(step, index));
+    const firstActionNode = nodes.find((node) => !node.isStarter) ?? nodes[0];
+
     setWorkflowTitle(template.title);
-    setSelectedNodeId(firstStep.id);
+    setActiveFlowSlot('action');
+    setSelectedNodeId(firstActionNode.id);
     setPropertiesPanelOpen(true);
+    if (!firstActionNode.isStarter) {
+      setPanelHighlightedActionId(firstActionNode.id);
+    }
   }, [template?.id, template?.steps, template?.title]);
 
   useEffect(() => {
@@ -413,6 +475,14 @@ export default function StudioCanvas({
     () => canvasNodes.filter((node) => !node.isStarter).length,
     [canvasNodes],
   );
+  const stepsPanelMode: 'starter' | 'actions' = useMemo(() => {
+    if (isBlankWorkflow) {
+      return activeFlowSlot === 'starter' ? 'starter' : 'actions';
+    }
+
+    const selectedNode = canvasNodes.find((node) => node.id === selectedNodeId);
+    return selectedNode?.isStarter ? 'starter' : 'actions';
+  }, [activeFlowSlot, canvasNodes, isBlankWorkflow, selectedNodeId]);
   const showAddStepGhostInTemplate = !isReadOnlyCanvas && !isBlankWorkflow && templateActionStepCount > 0;
 
   const propertiesNode = useMemo<WorkflowCanvasNode | null>(() => {
@@ -587,6 +657,65 @@ export default function StudioCanvas({
   const handleSelectNode = (node: WorkflowCanvasNode) => {
     setSelectedNodeId(node.id);
     setPropertiesPanelOpen(true);
+    if (node.isStarter) {
+      setPanelHighlightedStarterId(node.id);
+    } else {
+      setPanelHighlightedActionId(node.id);
+    }
+  };
+
+  const handleDeleteActionStep = (instanceId: string) => {
+    const stepIndex = actionSteps.findIndex((step) => step.instanceId === instanceId);
+    if (stepIndex < 0) {
+      return;
+    }
+
+    const nextSteps = actionSteps.filter((step) => step.instanceId !== instanceId);
+    setActionSteps(nextSteps);
+
+    setStepConfigValues((current) => {
+      const next = { ...current };
+      delete next[instanceId];
+      return next;
+    });
+
+    setInvalidStepIds((current) => {
+      const next = new Set(current);
+      next.delete(instanceId);
+      return next;
+    });
+
+    if (selectedNodeId !== instanceId) {
+      return;
+    }
+
+    if (nextSteps.length > 0) {
+      const fallbackIndex = Math.min(stepIndex, nextSteps.length - 1);
+      const fallbackStep = nextSteps[fallbackIndex];
+      setActiveFlowSlot('action');
+      setSelectedNodeId(fallbackStep.instanceId);
+      setPropertiesPanelOpen(true);
+      setPanelHighlightedActionId(fallbackStep.item.id);
+      return;
+    }
+
+    if (!isBlankWorkflow) {
+      const lastTemplateAction = [...canvasNodes].reverse().find((node) => !node.isStarter);
+      if (lastTemplateAction) {
+        handleSelectNode(lastTemplateAction);
+        return;
+      }
+
+      const triggerNode = canvasNodes.find((node) => node.isStarter);
+      if (triggerNode) {
+        handleSelectNode(triggerNode);
+        return;
+      }
+    }
+
+    setActiveFlowSlot('action');
+    setSelectedNodeId(FLOW_ACTION_SLOT_ID);
+    setPropertiesPanelOpen(false);
   };
 
   const focusInvalidStep = (stepId: string) => {
@@ -845,7 +974,7 @@ export default function StudioCanvas({
       >
         {actionDropHighlight === 'valid'
           ? 'Drop action here'
-          : 'Triggers belong in the Trigger step section above'}
+          : 'Triggers belong in the Trigger section above'}
       </p>
     );
   };
@@ -994,7 +1123,7 @@ export default function StudioCanvas({
 
         {!isReadOnlyCanvas && stepsPanelOpen && (
           <StudioCanvasStepsPanel
-            panelMode={activeFlowSlot === 'starter' ? 'starter' : 'actions'}
+            panelMode={stepsPanelMode}
             selectedActionId={panelHighlightedActionId}
             selectedStarterId={panelHighlightedStarterId}
             onCollapse={() => setStepsPanelOpen(false)}
@@ -1023,7 +1152,7 @@ export default function StudioCanvas({
                     }}
                     onDragOver={handleStarterSectionDragOver}
                   >
-                    <span className="studio-canvas-flow-section-label">Trigger step</span>
+                    <span className="studio-canvas-flow-section-label">Trigger</span>
                     <div
                       className={starterNodeClasses}
                       role="button"
@@ -1093,40 +1222,48 @@ export default function StudioCanvas({
                             {index > 0 && (
                               <span className="studio-canvas-flow-connector" aria-hidden="true" />
                             )}
-                            <div
-                              className={getPlacedActionNodeClasses(
-                                step,
-                                selectedNodeId,
-                                activeFlowSlot,
-                                'none',
-                                invalidStepIds.has(step.instanceId),
+                            <div className="studio-canvas-placed-action-card">
+                              {!isReadOnlyCanvas && (
+                                <CanvasPlacedActionStepMenu
+                                  stepLabel={step.item.label}
+                                  onDelete={() => handleDeleteActionStep(step.instanceId)}
+                                />
                               )}
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => focusPlacedActionStep(step)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault();
-                                  focusPlacedActionStep(step);
+                              <div
+                                className={getPlacedActionNodeClasses(
+                                  step,
+                                  selectedNodeId,
+                                  activeFlowSlot,
+                                  'none',
+                                  invalidStepIds.has(step.instanceId),
+                                )}
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => focusPlacedActionStep(step)}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    focusPlacedActionStep(step);
+                                  }
+                                }}
+                                onDrop={(event) =>
+                                  handleActionDrop(event, { replaceStepId: step.instanceId })
                                 }
-                              }}
-                              onDrop={(event) =>
-                                handleActionDrop(event, { replaceStepId: step.instanceId })
-                              }
-                            >
-                              {renderActionDropMessage()}
-                              <ModusWcIcon
-                                decorative
-                                name={step.item.icon}
-                                size="md"
-                                variant="solid"
-                                customClass="studio-canvas-starter-node-icon"
-                              />
-                              <div className="studio-canvas-starter-node-copy">
-                                <p className="studio-canvas-starter-node-title">
-                                  Step {index + 1}: {step.item.label}
-                                </p>
-                                <CanvasStepError show={invalidStepIds.has(step.instanceId)} />
+                              >
+                                {renderActionDropMessage()}
+                                <ModusWcIcon
+                                  decorative
+                                  name={step.item.icon}
+                                  size="md"
+                                  variant="solid"
+                                  customClass="studio-canvas-starter-node-icon"
+                                />
+                                <div className="studio-canvas-starter-node-copy">
+                                  <p className="studio-canvas-starter-node-title">
+                                    Step {index + 1}: {step.item.label}
+                                  </p>
+                                  <CanvasStepError show={invalidStepIds.has(step.instanceId)} />
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1201,21 +1338,29 @@ export default function StudioCanvas({
                   {actionSteps.map((step, index) => (
                     <div key={step.instanceId} className="studio-canvas-node-item">
                       <span className="studio-canvas-node-connector" aria-hidden="true" />
-                      <button
-                        type="button"
-                        className={`studio-canvas-node${
-                          selectedNodeId === step.instanceId ? ' is-node-selected' : ''
-                        }${invalidStepIds.has(step.instanceId) ? ' has-error' : ''}`}
-                        onClick={() => focusPlacedActionStep(step)}
-                      >
-                        <span className="studio-canvas-node-index">
-                          {templateActionStepCount + index + 1}
-                        </span>
-                        <div className="studio-canvas-node-copy">
-                          <p>{step.item.label}</p>
-                          <CanvasStepError show={invalidStepIds.has(step.instanceId)} />
-                        </div>
-                      </button>
+                      <div className="studio-canvas-placed-action-card">
+                        {!isReadOnlyCanvas && (
+                          <CanvasPlacedActionStepMenu
+                            stepLabel={step.item.label}
+                            onDelete={() => handleDeleteActionStep(step.instanceId)}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          className={`studio-canvas-node${
+                            selectedNodeId === step.instanceId ? ' is-node-selected' : ''
+                          }${invalidStepIds.has(step.instanceId) ? ' has-error' : ''}`}
+                          onClick={() => focusPlacedActionStep(step)}
+                        >
+                          <span className="studio-canvas-node-index">
+                            {templateActionStepCount + index + 1}
+                          </span>
+                          <div className="studio-canvas-node-copy">
+                            <p>{step.item.label}</p>
+                            <CanvasStepError show={invalidStepIds.has(step.instanceId)} />
+                          </div>
+                        </button>
+                      </div>
                     </div>
                   ))}
 

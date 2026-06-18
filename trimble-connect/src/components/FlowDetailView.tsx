@@ -152,7 +152,7 @@ export default function FlowDetailView({
       </div>
 
       <section className="workflows-flow-section">
-        <h4 className="workflows-flow-section-label">Starter</h4>
+        <h4 className="workflows-flow-section-label">Trigger</h4>
         <FlowStepCard
           stepId="starter"
           icon={flow.starter.icon}

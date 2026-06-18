@@ -1,8 +1,6 @@
 import type { StudioTemplate, StudioTemplateGroup } from './data';
 
 
-export type StudioTemplateViewMode = 'grid' | 'list';
-
 export type StudioTemplateSortField = 'title' | 'publisher' | 'steps' | 'clones' | 'version';
 
 export type StudioTemplateSortDirection = 'asc' | 'desc';

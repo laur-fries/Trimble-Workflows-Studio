@@ -9,11 +9,7 @@ import WorkflowsPrimaryButton from '../components/WorkflowsPrimaryButton';
 import StudioTemplateCatalogGroups from './StudioTemplateCatalogGroups';
 import { studioTemplateGroups, type StudioTemplate } from './data';
 import type { WorkflowGenerationPhase } from './workflowGenerator';
-import {
-  filterTemplateGroups,
-  type StudioTemplateSortDirection,
-  type StudioTemplateViewMode,
-} from './studioTemplateCatalog';
+import { filterTemplateGroups } from './studioTemplateCatalog';
 
 interface StudioDashboardProps {
   onBack: () => void;
@@ -39,8 +35,6 @@ export default function StudioDashboard({
 }: StudioDashboardProps) {
   const [templateSearchQuery, setTemplateSearchQuery] = useState('');
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(() => new Set());
-  const [viewMode, setViewMode] = useState<StudioTemplateViewMode>('grid');
-  const [sortDirection, setSortDirection] = useState<StudioTemplateSortDirection>('asc');
 
   const filteredTemplateGroups = useMemo(
     () => filterTemplateGroups(studioTemplateGroups, templateSearchQuery, selectedGroupIds),
@@ -69,10 +63,6 @@ export default function StudioDashboard({
     });
   };
 
-  const handleSort = () => {
-    setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
-  };
-
   return (
     <div className="studio-dashboard">
       <header className="studio-dashboard-header">
@@ -89,7 +79,7 @@ export default function StudioDashboard({
 
         <div className="studio-dashboard-page-header">
           <div className="studio-dashboard-page-title">
-            <h1 className="studio-workspace-page-title">Workflow Studio</h1>
+            <h1 className="studio-workspace-page-title">Workflow Builder</h1>
             <p className="studio-dashboard-subtitle">
               Start from a verified template or build a custom workflow tailored to your needs.
             </p>
@@ -152,11 +142,7 @@ export default function StudioDashboard({
           <StudioTemplateCatalogGroups
             key={catalogGroupsKey}
             groups={filteredTemplateGroups}
-            viewMode={viewMode}
-            sortDirection={sortDirection}
-            onSort={handleSort}
             onUseTemplate={onUseTemplate}
-            onViewModeChange={setViewMode}
           />
         )}
       </section>

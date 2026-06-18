@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
+  ModusWcButton,
   ModusWcLoader,
   ModusWcTextInput,
 } from '@trimble-oss/moduswebcomponents-react';
@@ -163,13 +164,15 @@ export default function StudioAssistantPrompt({
 
         {!isGenerating ? (
           <div className="studio-assistant-sample-prompt">
-            <button
-              type="button"
-              className="studio-assistant-sample-prompt-btn"
-              onClick={handleUseSamplePrompt}
+            <ModusWcButton
+              color="tertiary"
+              customClass="studio-assistant-sample-prompt-btn"
+              size="sm"
+              variant="outlined"
+              onButtonClick={handleUseSamplePrompt}
             >
               Try with sample prompt
-            </button>
+            </ModusWcButton>
           </div>
         ) : null}
         </div>

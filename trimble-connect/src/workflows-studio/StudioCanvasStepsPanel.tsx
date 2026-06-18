@@ -91,7 +91,7 @@ export default function StudioCanvasStepsPanel({
       <div className="studio-canvas-steps-panel-main">
         <div className="studio-canvas-steps-panel-header">
           <ModusWcTypography hierarchy="h5" weight="semibold" customClass="studio-canvas-steps-panel-title">
-            {isStarterMode ? 'Starting step' : 'Steps'}
+            {isStarterMode ? 'Trigger step' : 'Steps'}
           </ModusWcTypography>
           <p className="studio-canvas-steps-panel-subtitle">
             {isStarterMode

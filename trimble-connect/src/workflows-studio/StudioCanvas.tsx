@@ -845,7 +845,7 @@ export default function StudioCanvas({
       >
         {actionDropHighlight === 'valid'
           ? 'Drop action here'
-          : 'Triggers belong in the Starting step section above'}
+          : 'Triggers belong in the Trigger step section above'}
       </p>
     );
   };
@@ -1023,7 +1023,7 @@ export default function StudioCanvas({
                     }}
                     onDragOver={handleStarterSectionDragOver}
                   >
-                    <span className="studio-canvas-flow-section-label">Starting step</span>
+                    <span className="studio-canvas-flow-section-label">Trigger step</span>
                     <div
                       className={starterNodeClasses}
                       role="button"
@@ -1059,7 +1059,7 @@ export default function StudioCanvas({
                       />
                       <div className="studio-canvas-starter-node-copy">
                         <p className="studio-canvas-starter-node-title">
-                          {starterStep?.label ?? 'Choose a starter'}
+                          {starterStep?.label ?? 'Choose a trigger'}
                         </p>
                         {starterHasError ? (
                           <CanvasStepError show />

@@ -12,7 +12,7 @@ interface StudioSideNavProps {
 }
 
 const navItems: { id: StudioWorkspaceTab; label: string; icon: string }[] = [
-  { id: 'discover', label: 'Studio', icon: 'settings' },
+  { id: 'discover', label: 'Builder', icon: 'settings' },
   { id: 'my-workflows', label: 'My workflows', icon: 'flowchart' },
   { id: 'activity', label: 'Activity', icon: 'history' },
 ];

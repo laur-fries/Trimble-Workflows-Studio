@@ -31,6 +31,11 @@ import {
 } from './studioStepValidation';
 import { toWorkflowCanvasState, type WorkflowModel } from './workflowGenerator';
 import type { PanelWorkflowCanvasPayload } from './panelWorkflowBridge';
+import {
+  buildSavedWorkflow,
+  createSavedWorkflowId,
+  type StudioSavedWorkflow,
+} from './studioSavedWorkflows';
 
 export interface PlacedActionStep {
   instanceId: string;
@@ -123,11 +128,14 @@ interface StudioCanvasProps {
   template: StudioTemplate | null;
   generatedWorkflow?: WorkflowModel | null;
   panelWorkflow?: PanelWorkflowCanvasPayload | null;
+  restoredWorkflow?: StudioSavedWorkflow | null;
+  savedWorkflowId?: string | null;
   highlightStartNode?: boolean;
   assistantPrompt?: string;
   canvasMode?: StudioCanvasMode;
   onBack?: () => void;
   onCloneTemplate?: () => void;
+  onSaveWorkflow?: (workflow: StudioSavedWorkflow) => void;
 }
 
 function resetDropHighlightIfLeaving(
@@ -185,11 +193,14 @@ export default function StudioCanvas({
   template,
   generatedWorkflow = null,
   panelWorkflow = null,
+  restoredWorkflow = null,
+  savedWorkflowId = null,
   highlightStartNode = false,
   assistantPrompt = '',
   canvasMode = 'edit',
   onBack,
   onCloneTemplate,
+  onSaveWorkflow,
 }: StudioCanvasProps) {
   const [workflowTitle, setWorkflowTitle] = useState(template?.title ?? 'Untitled Workflow');
   const [stepsPanelOpen, setStepsPanelOpen] = useState(true);
@@ -253,6 +264,46 @@ export default function StudioCanvas({
       panelWorkflow.actionSteps[panelWorkflow.actionSteps.length - 1]?.item.id ?? null,
     );
   }, [panelWorkflow]);
+
+  useEffect(() => {
+    if (!restoredWorkflow) {
+      return;
+    }
+
+    setWorkflowTitle(restoredWorkflow.title);
+    setStepConfigValues(restoredWorkflow.stepConfigValues);
+    setInvalidStepIds(new Set());
+    setShowSaveFieldErrors(false);
+
+    if (restoredWorkflow.templateId) {
+      setStarterStep(null);
+      setActionSteps([]);
+      setActiveFlowSlot('action');
+      const firstStepId = restoredWorkflow.templateSteps?.[0]?.stepId ?? null;
+      setSelectedNodeId(firstStepId);
+      setPropertiesPanelOpen(Boolean(firstStepId));
+      return;
+    }
+
+    setStarterStep(restoredWorkflow.starterStep);
+    setActionSteps(
+      restoredWorkflow.actionSteps.map((step, index) => ({
+        instanceId: step.instanceId || `action-step-${index}`,
+        item: step.item,
+      })),
+    );
+    setActiveFlowSlot(restoredWorkflow.actionSteps.length > 0 ? 'action' : 'starter');
+    const selectedId =
+      restoredWorkflow.actionSteps[restoredWorkflow.actionSteps.length - 1]?.instanceId ??
+      restoredWorkflow.starterStep?.id ??
+      FLOW_STARTER_SLOT_ID;
+    setSelectedNodeId(selectedId);
+    setPropertiesPanelOpen(Boolean(selectedId));
+    setPanelHighlightedStarterId(restoredWorkflow.starterStep?.id ?? null);
+    setPanelHighlightedActionId(
+      restoredWorkflow.actionSteps[restoredWorkflow.actionSteps.length - 1]?.item.id ?? null,
+    );
+  }, [restoredWorkflow]);
 
   useEffect(() => {
     if (!template?.steps.length) {
@@ -507,6 +558,19 @@ export default function StudioCanvas({
 
     setInvalidStepIds(new Set());
     setShowSaveFieldErrors(false);
+
+    onSaveWorkflow?.(
+      buildSavedWorkflow({
+        id: savedWorkflowId ?? createSavedWorkflowId(),
+        title: workflowTitle,
+        template,
+        starterStep,
+        actionSteps,
+        canvasNodes,
+        isBlankWorkflow,
+        stepConfigValues,
+      }),
+    );
   };
 
   const handleConfigChange = (fieldId: string, value: string) => {

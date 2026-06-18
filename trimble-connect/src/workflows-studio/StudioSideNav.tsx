@@ -12,8 +12,9 @@ interface StudioSideNavProps {
 }
 
 const navItems: { id: StudioWorkspaceTab; label: string; icon: string }[] = [
-  { id: 'discover', label: 'Discover', icon: 'search' },
-  { id: 'my-workflows', label: 'My Workflows', icon: 'flowchart' },
+  { id: 'discover', label: 'Studio', icon: 'settings' },
+  { id: 'my-workflows', label: 'My workflows', icon: 'flowchart' },
+  { id: 'activity', label: 'Activity', icon: 'history' },
 ];
 
 export default function StudioSideNav({ activeTab, expanded, onTabChange }: StudioSideNavProps) {

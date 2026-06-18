@@ -1,6 +1,6 @@
 import { projectSightOperations } from './projectSightOperations';
 
-export type StudioWorkspaceTab = 'discover' | 'my-workflows';
+export type StudioWorkspaceTab = 'discover' | 'my-workflows' | 'activity';
 
 export type StudioView = StudioWorkspaceTab | 'canvas';
 
@@ -102,7 +102,7 @@ export const studioTemplateGroups: StudioTemplateGroup[] = [
   {
     id: 'notifications-alerts',
     title: 'Notifications & alerts',
-    subtitle: '',
+    subtitle: 'Pre-packaged notification templates ready to configure for your projects.',
     templates: [
       {
         id: 'bcf-email-notify',
@@ -149,7 +149,7 @@ export const studioTemplateGroups: StudioTemplateGroup[] = [
   {
     id: 'create-new-group',
     title: 'Create new group',
-    subtitle: '',
+    subtitle: 'Pre-packaged onboarding templates ready to configure for new project setup.',
     templates: [
       {
         id: 'connect-projectsight-link',
@@ -176,7 +176,7 @@ export const studioTemplateGroups: StudioTemplateGroup[] = [
   {
     id: 'connect-model-deliverables',
     title: 'Trimble Connect Workflows',
-    subtitle: '',
+    subtitle: 'Pre-packaged Connect automation templates ready to configure for model and deliverable workflows.',
     templates: [
       {
         id: 'automated-field-points-ingest',
@@ -232,7 +232,7 @@ export const studioTemplateGroups: StudioTemplateGroup[] = [
   {
     id: 'projectsight-coordination',
     title: 'ProjectSight Workflows',
-    subtitle: '',
+    subtitle: 'Pre-packaged ProjectSight coordination templates ready to configure for issue and field workflows.',
     templates: [
       {
         id: 'model-clash-to-projectsight-issue',

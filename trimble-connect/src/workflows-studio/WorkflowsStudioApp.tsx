@@ -1,17 +1,48 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StudioHeader } from './StudioShell';
 import StudioSideNav from './StudioSideNav';
 import StudioDashboard from './StudioDashboard';
 import StudioMyWorkflows from './StudioMyWorkflows';
+import StudioActivity from './StudioActivity';
 import StudioCanvas, { type StudioCanvasMode } from './StudioCanvas';
-import type { StudioTemplate, StudioView, StudioViewportMode, StudioWorkspaceTab } from './data';
+import {
+  studioTemplateGroups,
+  type StudioTemplate,
+  type StudioView,
+  type StudioViewportMode,
+  type StudioWorkspaceTab,
+} from './data';
 import {
   generateWorkflow,
   type WorkflowGenerationPhase,
   type WorkflowModel,
 } from './workflowGenerator';
 import type { PanelWorkflowCanvasPayload } from './panelWorkflowBridge';
+import {
+  findSavedWorkflowTemplate,
+  type StudioSavedWorkflow,
+} from './studioSavedWorkflows';
 import './WorkflowsStudio.css';
+
+const SAVED_WORKFLOWS_STORAGE_KEY = 'workflows-studio.saved-workflows';
+
+function readSavedWorkflowsFromStorage(): StudioSavedWorkflow[] {
+  if (typeof window === 'undefined') {
+    return [];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(SAVED_WORKFLOWS_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw) as StudioSavedWorkflow[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 interface WorkflowsStudioAppProps {
   onBack: () => void;
@@ -41,35 +72,43 @@ export default function WorkflowsStudioApp({
   );
   const [isGeneratingWorkflow, setIsGeneratingWorkflow] = useState(false);
   const [generationPhase, setGenerationPhase] = useState<WorkflowGenerationPhase | null>(null);
+  const [savedWorkflows, setSavedWorkflows] = useState<StudioSavedWorkflow[]>(() =>
+    readSavedWorkflowsFromStorage(),
+  );
+  const [editingWorkflowId, setEditingWorkflowId] = useState<string | null>(null);
+  const [restoredWorkflow, setRestoredWorkflow] = useState<StudioSavedWorkflow | null>(null);
+
+  useEffect(() => {
+    window.localStorage.setItem(SAVED_WORKFLOWS_STORAGE_KEY, JSON.stringify(savedWorkflows));
+  }, [savedWorkflows]);
+
+  const resetCanvasSession = () => {
+    setSelectedTemplate(null);
+    setCanvasMode('edit');
+    setHighlightStartNode(false);
+    setAssistantPrompt('');
+    setGeneratedWorkflow(null);
+    setImportedPanelWorkflow(null);
+    setEditingWorkflowId(null);
+    setRestoredWorkflow(null);
+  };
 
   const handleWorkspaceTabChange = (tab: StudioWorkspaceTab) => {
     setWorkspaceTab(tab);
     setView(tab);
-    setSelectedTemplate(null);
-    setCanvasMode('edit');
-    setHighlightStartNode(false);
-    setAssistantPrompt('');
-    setGeneratedWorkflow(null);
-    setImportedPanelWorkflow(null);
+    resetCanvasSession();
   };
 
   const handleCreateNewWorkflow = () => {
-    setSelectedTemplate(null);
-    setAssistantPrompt('');
-    setGeneratedWorkflow(null);
-    setImportedPanelWorkflow(null);
+    resetCanvasSession();
     setHighlightStartNode(true);
-    setCanvasMode('edit');
     setView('canvas');
   };
 
   const handleGenerateSuccess = (model: WorkflowModel) => {
+    resetCanvasSession();
     setGeneratedWorkflow(model);
-    setSelectedTemplate(null);
-    setImportedPanelWorkflow(null);
     setAssistantPrompt(model.prompt);
-    setHighlightStartNode(false);
-    setCanvasMode('edit');
     setView('canvas');
   };
 
@@ -87,24 +126,47 @@ export default function WorkflowsStudioApp({
   };
 
   const handleUseTemplate = (template: StudioTemplate) => {
+    resetCanvasSession();
     setSelectedTemplate(template);
-    setAssistantPrompt('');
-    setGeneratedWorkflow(null);
-    setImportedPanelWorkflow(null);
-    setHighlightStartNode(false);
+    setCanvasMode('cloned');
+    setView('canvas');
+  };
+
+  const handleSaveWorkflow = (workflow: StudioSavedWorkflow) => {
+    setSavedWorkflows((current) => {
+      const existingIndex = current.findIndex((entry) => entry.id === workflow.id);
+
+      if (existingIndex >= 0) {
+        const next = [...current];
+        next[existingIndex] = workflow;
+        return next;
+      }
+
+      return [workflow, ...current];
+    });
+
+    resetCanvasSession();
+    setWorkspaceTab('my-workflows');
+    setView('my-workflows');
+  };
+
+  const handleSelectSavedWorkflow = (workflow: StudioSavedWorkflow) => {
+    resetCanvasSession();
+    setEditingWorkflowId(workflow.id);
+    setRestoredWorkflow(workflow);
+    setSelectedTemplate(findSavedWorkflowTemplate(workflow.templateId, studioTemplateGroups));
     setCanvasMode('edit');
     setView('canvas');
   };
 
+  const handleDeleteSavedWorkflow = (workflowId: string) => {
+    setSavedWorkflows((current) => current.filter((workflow) => workflow.id !== workflowId));
+  };
+
   const handleBackFromCanvas = () => {
+    resetCanvasSession();
     setView('discover');
     setWorkspaceTab('discover');
-    setSelectedTemplate(null);
-    setCanvasMode('edit');
-    setHighlightStartNode(false);
-    setAssistantPrompt('');
-    setGeneratedWorkflow(null);
-    setImportedPanelWorkflow(null);
   };
 
   const renderContent = () => {
@@ -114,16 +176,34 @@ export default function WorkflowsStudioApp({
           template={selectedTemplate}
           generatedWorkflow={generatedWorkflow}
           panelWorkflow={importedPanelWorkflow}
+          restoredWorkflow={restoredWorkflow}
+          savedWorkflowId={editingWorkflowId}
           highlightStartNode={highlightStartNode}
           assistantPrompt={assistantPrompt}
           canvasMode={canvasMode}
           onBack={handleBackFromCanvas}
+          onSaveWorkflow={handleSaveWorkflow}
         />
       );
     }
 
     if (view === 'my-workflows') {
-      return <StudioMyWorkflows onBrowseTemplates={() => handleWorkspaceTabChange('discover')} />;
+      return (
+        <StudioMyWorkflows
+          workflows={savedWorkflows}
+          onBrowseTemplates={() => handleWorkspaceTabChange('discover')}
+          onSelectWorkflow={handleSelectSavedWorkflow}
+          onWorkflowAction={(workflowId, action) => {
+            if (action === 'delete') {
+              handleDeleteSavedWorkflow(workflowId);
+            }
+          }}
+        />
+      );
+    }
+
+    if (view === 'activity') {
+      return <StudioActivity />;
     }
 
     return (

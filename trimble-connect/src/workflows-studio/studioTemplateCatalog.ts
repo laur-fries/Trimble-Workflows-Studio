@@ -1,6 +1,5 @@
 import type { StudioTemplate, StudioTemplateGroup } from './data';
 
-export type StudioTemplateCatalogFilter = ReadonlySet<string>;
 
 export type StudioTemplateViewMode = 'grid' | 'list';
 
@@ -50,6 +49,8 @@ export function matchesTemplateSearch(template: StudioTemplate, query: string): 
 
   return terms.every((term) => haystack.includes(term));
 }
+
+export type StudioTemplateCatalogFilter = ReadonlySet<string>;
 
 export function matchesGroupFilter(groupId: string, selectedGroupIds: StudioTemplateCatalogFilter): boolean {
   if (selectedGroupIds.size === 0) {

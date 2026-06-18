@@ -4,44 +4,46 @@ import { formatTemplateMetaMetrics } from './studioTemplateCatalog';
 
 interface StudioTemplateCardProps {
   template: StudioTemplate;
-  onUseTemplate: (template: StudioTemplate) => void;
+  onPreviewTemplate: (template: StudioTemplate) => void;
 }
 
-export default function StudioTemplateCard({ template, onUseTemplate }: StudioTemplateCardProps) {
+export default function StudioTemplateCard({ template, onPreviewTemplate }: StudioTemplateCardProps) {
   const metaMetrics = formatTemplateMetaMetrics(template);
 
   return (
-    <button
-      type="button"
-      className="studio-template-card"
-      onClick={() => onUseTemplate(template)}
-    >
-      <div className="studio-template-card-icons" aria-hidden="true">
-        {template.icons.map((icon) => (
-          <span key={icon} className="studio-template-card-icon">
-            <ModusWcIcon decorative name={icon} size="sm" />
-          </span>
-        ))}
-      </div>
+    <article className="studio-template-card-shell">
+      <button
+        type="button"
+        className="studio-template-card"
+        onClick={() => onPreviewTemplate(template)}
+      >
+        <div className="studio-template-card-icons" aria-hidden="true">
+          {template.icons.map((icon) => (
+            <span key={icon} className="studio-template-card-icon">
+              <ModusWcIcon decorative name={icon} size="sm" />
+            </span>
+          ))}
+        </div>
 
-      <h3 className="studio-template-card-title">{template.title}</h3>
-      <p className="studio-template-description">{template.description}</p>
-      {metaMetrics ? <p className="studio-template-meta-metrics">{metaMetrics}</p> : null}
-    </button>
+        <h3 className="studio-template-card-title">{template.title}</h3>
+        <p className="studio-template-description">{template.description}</p>
+        {metaMetrics ? <p className="studio-template-meta-metrics">{metaMetrics}</p> : null}
+      </button>
+    </article>
   );
 }
 
 interface StudioTemplateListProps {
   templates: StudioTemplate[];
   sortDirection: 'asc' | 'desc';
-  onUseTemplate: (template: StudioTemplate) => void;
+  onPreviewTemplate: (template: StudioTemplate) => void;
   onSort: () => void;
 }
 
 export function StudioTemplateList({
   templates,
   sortDirection,
-  onUseTemplate,
+  onPreviewTemplate,
   onSort,
 }: StudioTemplateListProps) {
   return (
@@ -66,7 +68,7 @@ export function StudioTemplateList({
             type="button"
             className="studio-template-list-row"
             role="row"
-            onClick={() => onUseTemplate(template)}
+            onClick={() => onPreviewTemplate(template)}
           >
             <div className="studio-template-list-cell studio-template-list-cell--title">
               <p className="studio-template-list-title">{template.title}</p>

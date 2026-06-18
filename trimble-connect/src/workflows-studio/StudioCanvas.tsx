@@ -25,7 +25,9 @@ import { findWorkflowActionById } from './workflowActionLibrary';
 import { readActionDragId, isActionDrag, isStarterDrag, readStarterDragId } from './starterDrag';
 import { getStudioStepConfigFields } from './stepConfigFields';
 import {
+  getCanvasStepNavigationOrder,
   getCanvasValidationTargets,
+  getNextCanvasStepNodeId,
   getUnconfiguredCanvasStepIds,
   isStudioStepConfigured,
 } from './studioStepValidation';
@@ -416,6 +418,15 @@ export default function StudioCanvas({
     : {};
   const showPropertiesPanel = propertiesPanelOpen && propertiesNode !== null;
   const selectedStepHasError = propertiesNode ? invalidStepIds.has(propertiesNode.id) : false;
+  const stepNavigationOrder = useMemo(
+    () => getCanvasStepNavigationOrder(isBlankWorkflow, starterStep, actionSteps, canvasNodes),
+    [actionSteps, canvasNodes, isBlankWorkflow, starterStep],
+  );
+  const hasNextConfiguredStep =
+    propertiesNode !== null &&
+    getNextCanvasStepNodeId(stepNavigationOrder, propertiesNode.id) !== null;
+  const showStepNavigation =
+    !isReadOnlyCanvas && propertiesNode !== null && stepNavigationOrder.includes(propertiesNode.id);
 
   const resolveLibraryStepId = (): string | null => {
     if (!propertiesNode) {
@@ -534,6 +545,37 @@ export default function StudioCanvas({
     if (templateNode) {
       handleSelectNode(templateNode);
     }
+  };
+
+  const handleNextStep = () => {
+    if (!propertiesNode || isReadOnlyCanvas) {
+      return;
+    }
+
+    if (propertiesConfigFields.length > 0) {
+      const libraryStepId = resolveLibraryStepId();
+      if (
+        libraryStepId &&
+        !isStudioStepConfigured(
+          libraryStepId,
+          Boolean(propertiesNode.isStarter),
+          propertiesConfigValues,
+        )
+      ) {
+        setShowSaveFieldErrors(true);
+        setInvalidStepIds((current) => new Set(current).add(propertiesNode.id));
+        return;
+      }
+    }
+
+    setShowSaveFieldErrors(false);
+    const nextStepId = getNextCanvasStepNodeId(stepNavigationOrder, propertiesNode.id);
+    if (nextStepId) {
+      focusInvalidStep(nextStepId);
+      return;
+    }
+
+    setPropertiesPanelOpen(false);
   };
 
   const handleSave = () => {
@@ -1148,11 +1190,14 @@ export default function StudioCanvas({
           <StudioCanvasPropertiesPanel
             configFields={propertiesConfigFields}
             configValues={propertiesConfigValues}
+            hasNextStep={hasNextConfiguredStep}
             node={propertiesNode}
             readOnly={isReadOnlyCanvas}
             showFieldErrors={showSaveFieldErrors && selectedStepHasError}
+            showStepNavigation={showStepNavigation}
             onConfigChange={handleConfigChange}
             onClose={() => setPropertiesPanelOpen(false)}
+            onNextStep={handleNextStep}
           />
         )}
       </div>

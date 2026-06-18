@@ -4,10 +4,10 @@ import { formatTemplateMetaMetrics } from './studioTemplateCatalog';
 
 interface StudioTemplateCardProps {
   template: StudioTemplate;
-  onPreviewTemplate: (template: StudioTemplate) => void;
+  onUseTemplate: (template: StudioTemplate) => void;
 }
 
-export default function StudioTemplateCard({ template, onPreviewTemplate }: StudioTemplateCardProps) {
+export default function StudioTemplateCard({ template, onUseTemplate }: StudioTemplateCardProps) {
   const metaMetrics = formatTemplateMetaMetrics(template);
 
   return (
@@ -15,7 +15,7 @@ export default function StudioTemplateCard({ template, onPreviewTemplate }: Stud
       <button
         type="button"
         className="studio-template-card"
-        onClick={() => onPreviewTemplate(template)}
+        onClick={() => onUseTemplate(template)}
       >
         <div className="studio-template-card-icons" aria-hidden="true">
           {template.icons.map((icon) => (
@@ -27,7 +27,7 @@ export default function StudioTemplateCard({ template, onPreviewTemplate }: Stud
 
         <h3 className="studio-template-card-title">{template.title}</h3>
         <p className="studio-template-description">{template.description}</p>
-        {metaMetrics ? <p className="studio-template-meta-metrics">{metaMetrics}</p> : null}
+        <p className="studio-template-meta-metrics">{metaMetrics}</p>
       </button>
     </article>
   );
@@ -36,14 +36,14 @@ export default function StudioTemplateCard({ template, onPreviewTemplate }: Stud
 interface StudioTemplateListProps {
   templates: StudioTemplate[];
   sortDirection: 'asc' | 'desc';
-  onPreviewTemplate: (template: StudioTemplate) => void;
+  onUseTemplate: (template: StudioTemplate) => void;
   onSort: () => void;
 }
 
 export function StudioTemplateList({
   templates,
   sortDirection,
-  onPreviewTemplate,
+  onUseTemplate,
   onSort,
 }: StudioTemplateListProps) {
   return (
@@ -68,12 +68,12 @@ export function StudioTemplateList({
             type="button"
             className="studio-template-list-row"
             role="row"
-            onClick={() => onPreviewTemplate(template)}
+            onClick={() => onUseTemplate(template)}
           >
             <div className="studio-template-list-cell studio-template-list-cell--title">
               <p className="studio-template-list-title">{template.title}</p>
               <p className="studio-template-list-description">{template.description}</p>
-              {metaMetrics ? <p className="studio-template-meta-metrics">{metaMetrics}</p> : null}
+              <p className="studio-template-meta-metrics">{metaMetrics}</p>
             </div>
           </button>
         );

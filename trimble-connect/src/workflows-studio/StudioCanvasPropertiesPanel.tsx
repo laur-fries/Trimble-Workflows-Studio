@@ -4,27 +4,34 @@ import {
   ModusWcTextInput,
   ModusWcTypography,
 } from '@trimble-oss/moduswebcomponents-react';
+import WorkflowsPrimaryButton from '../components/WorkflowsPrimaryButton';
 import type { WorkflowCanvasNode } from './data';
 import type { StudioStepConfigField } from './stepConfigFields';
 
 interface StudioCanvasPropertiesPanelProps {
   configFields: StudioStepConfigField[];
   configValues: Record<string, string>;
+  hasNextStep: boolean;
   node: WorkflowCanvasNode;
   readOnly?: boolean;
   showFieldErrors?: boolean;
+  showStepNavigation?: boolean;
   onClose: () => void;
   onConfigChange: (fieldId: string, value: string) => void;
+  onNextStep: () => void;
 }
 
 export default function StudioCanvasPropertiesPanel({
   configFields,
   configValues,
+  hasNextStep,
   node,
   readOnly = false,
   showFieldErrors = false,
+  showStepNavigation = false,
   onClose,
   onConfigChange,
+  onNextStep,
 }: StudioCanvasPropertiesPanelProps) {
   return (
     <aside className="studio-canvas-properties-panel" aria-label="Node properties">
@@ -107,6 +114,14 @@ export default function StudioCanvasPropertiesPanel({
             </p>
           )}
         </div>
+
+        {showStepNavigation ? (
+          <footer className="studio-canvas-properties-panel-footer workflows-flow-detail-footer workflows-step-config-panel-footer">
+            <WorkflowsPrimaryButton fullWidth onClick={onNextStep}>
+              {hasNextStep ? 'Next step' : 'Done'}
+            </WorkflowsPrimaryButton>
+          </footer>
+        ) : null}
       </div>
 
       <button

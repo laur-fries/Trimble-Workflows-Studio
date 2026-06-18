@@ -99,3 +99,41 @@ export function getUnconfiguredCanvasStepIds(
     })
     .map((target) => target.nodeId);
 }
+
+export function getCanvasStepNavigationOrder(
+  isBlankWorkflow: boolean,
+  starterStep: OperationItem | null,
+  actionSteps: PlacedActionStepRef[],
+  canvasNodes: WorkflowCanvasNode[],
+): string[] {
+  if (isBlankWorkflow) {
+    const order: string[] = [];
+
+    if (starterStep) {
+      order.push(starterStep.id);
+    }
+
+    actionSteps.forEach((step) => {
+      order.push(step.instanceId);
+    });
+
+    return order;
+  }
+
+  const order = canvasNodes.map((node) => node.id);
+
+  actionSteps.forEach((step) => {
+    order.push(step.instanceId);
+  });
+
+  return order;
+}
+
+export function getNextCanvasStepNodeId(stepOrder: string[], currentNodeId: string): string | null {
+  const currentIndex = stepOrder.findIndex((id) => id === currentNodeId);
+  if (currentIndex === -1 || currentIndex >= stepOrder.length - 1) {
+    return null;
+  }
+
+  return stepOrder[currentIndex + 1];
+}

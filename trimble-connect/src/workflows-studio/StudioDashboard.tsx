@@ -7,7 +7,6 @@ import {
 import StudioAssistantPrompt from './StudioAssistantPrompt';
 import WorkflowsPrimaryButton from '../components/WorkflowsPrimaryButton';
 import StudioTemplateCatalogGroups from './StudioTemplateCatalogGroups';
-import StudioTemplatePreviewModal from './StudioTemplatePreviewModal';
 import { studioTemplateGroups, type StudioTemplate } from './data';
 import type { WorkflowGenerationPhase } from './workflowGenerator';
 import {
@@ -42,7 +41,6 @@ export default function StudioDashboard({
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(() => new Set());
   const [viewMode, setViewMode] = useState<StudioTemplateViewMode>('grid');
   const [sortDirection, setSortDirection] = useState<StudioTemplateSortDirection>('asc');
-  const [previewTemplate, setPreviewTemplate] = useState<StudioTemplate | null>(null);
 
   const filteredTemplateGroups = useMemo(
     () => filterTemplateGroups(studioTemplateGroups, templateSearchQuery, selectedGroupIds),
@@ -65,19 +63,6 @@ export default function StudioDashboard({
 
   const handleSort = () => {
     setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
-  };
-
-  const handlePreviewTemplate = (template: StudioTemplate) => {
-    setPreviewTemplate(template);
-  };
-
-  const handleClosePreview = () => {
-    setPreviewTemplate(null);
-  };
-
-  const handleUseTemplateFromPreview = (template: StudioTemplate) => {
-    setPreviewTemplate(null);
-    onUseTemplate(template);
   };
 
   return (
@@ -161,18 +146,11 @@ export default function StudioDashboard({
             viewMode={viewMode}
             sortDirection={sortDirection}
             onSort={handleSort}
-            onPreviewTemplate={handlePreviewTemplate}
+            onUseTemplate={onUseTemplate}
             onViewModeChange={setViewMode}
           />
         )}
       </section>
-
-      <StudioTemplatePreviewModal
-        isOpen={Boolean(previewTemplate)}
-        template={previewTemplate}
-        onClose={handleClosePreview}
-        onUseTemplate={handleUseTemplateFromPreview}
-      />
     </div>
   );
 }

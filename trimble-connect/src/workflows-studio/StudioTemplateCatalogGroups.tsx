@@ -15,7 +15,7 @@ interface StudioTemplateCatalogGroupsProps {
   viewMode: StudioTemplateViewMode;
   sortDirection: StudioTemplateSortDirection;
   onSort: () => void;
-  onPreviewTemplate: (template: StudioTemplate) => void;
+  onUseTemplate: (template: StudioTemplate) => void;
   onViewModeChange: (viewMode: StudioTemplateViewMode) => void;
 }
 
@@ -25,14 +25,14 @@ function TemplateGroupCollapse({
   viewMode,
   sortDirection,
   onExpandedChange,
-  onPreviewTemplate,
+  onUseTemplate,
 }: {
   group: StudioTemplateGroup;
   expanded: boolean;
   viewMode: StudioTemplateViewMode;
   sortDirection: StudioTemplateSortDirection;
   onExpandedChange: (expanded: boolean) => void;
-  onPreviewTemplate: (template: StudioTemplate) => void;
+  onUseTemplate: (template: StudioTemplate) => void;
 }) {
   const sortedTemplates = useMemo(
     () => sortTemplates(group.templates, 'title', sortDirection),
@@ -67,7 +67,7 @@ function TemplateGroupCollapse({
         {viewMode === 'grid' ? (
           <div className="studio-template-grid studio-template-group-content">
             {sortedTemplates.map((template) => (
-              <StudioTemplateCard key={template.id} template={template} onPreviewTemplate={onPreviewTemplate} />
+              <StudioTemplateCard key={template.id} template={template} onUseTemplate={onUseTemplate} />
             ))}
           </div>
         ) : (
@@ -80,12 +80,12 @@ function TemplateGroupCollapse({
                   key={template.id}
                   type="button"
                   className="studio-template-list-row studio-template-list-row--grouped"
-                  onClick={() => onPreviewTemplate(template)}
+                  onClick={() => onUseTemplate(template)}
                 >
                   <div className="studio-template-list-cell studio-template-list-cell--title">
                     <p className="studio-template-list-title">{template.title}</p>
                     <p className="studio-template-list-description">{template.description}</p>
-                    {metaMetrics ? <p className="studio-template-meta-metrics">{metaMetrics}</p> : null}
+                    <p className="studio-template-meta-metrics">{metaMetrics}</p>
                   </div>
                 </button>
               );
@@ -102,7 +102,7 @@ export default function StudioTemplateCatalogGroups({
   viewMode,
   sortDirection,
   onSort,
-  onPreviewTemplate,
+  onUseTemplate,
   onViewModeChange,
 }: StudioTemplateCatalogGroupsProps) {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
@@ -220,7 +220,7 @@ export default function StudioTemplateCatalogGroups({
             onExpandedChange={(expanded) =>
               setExpandedGroups((current) => ({ ...current, [group.id]: expanded }))
             }
-            onPreviewTemplate={onPreviewTemplate}
+            onUseTemplate={onUseTemplate}
           />
         ))}
       </ModusWcAccordion>

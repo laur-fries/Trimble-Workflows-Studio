@@ -2672,6 +2672,10 @@ modus-wc-collapse details.studio-canvas-recently-used-collapse.modus-wc-collapse
   padding: 16px;
 }
 
+.studio-canvas-properties-panel-footer {
+  margin-top: auto;
+}
+
 .studio-canvas-properties-empty {
   color: var(--modus-wc-color-base-content-low-contrast);
   font-size: 13px;

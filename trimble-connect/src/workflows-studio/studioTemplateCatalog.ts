@@ -15,18 +15,11 @@ export function formatTeamClones(count: number): string {
   return count.toLocaleString();
 }
 
-export function formatTemplateMetaMetrics(template: StudioTemplate): string | null {
-  const parts: string[] = [];
+export function formatTemplateMetaMetrics(template: StudioTemplate): string {
+  const stepLabel = getTemplateStepCount(template) === 1 ? 'Step' : 'Steps';
+  const reclaimedTime = template.reclaimedTime?.trim() || 'Not estimated';
 
-  if (template.stepCount > 0) {
-    parts.push(`${getTemplateStepCount(template)} Steps`);
-  }
-
-  if (template.reclaimedTime) {
-    parts.push(`Est. Time Saved: ${template.reclaimedTime}`);
-  }
-
-  return parts.length > 0 ? parts.join(' | ') : null;
+  return `${getTemplateStepCount(template)} ${stepLabel} | Est. Time Saved: ${reclaimedTime}`;
 }
 
 export function matchesTemplateSearch(template: StudioTemplate, query: string): boolean {

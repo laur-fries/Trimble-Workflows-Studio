@@ -4,7 +4,7 @@ export const discoverFlows: DiscoverFlow[] = [
   {
     id: 'csv-tflx',
     category: 'File conversion',
-    title: 'Auto-convert CSV uploads to TFLX',
+    title: 'Convert CSV files to TFLX',
     icons: ['file', 'refresh'],
     starter: {
       label: 'Step 1: Read from Trimble Connect',

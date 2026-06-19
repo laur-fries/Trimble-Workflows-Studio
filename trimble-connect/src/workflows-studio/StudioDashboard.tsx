@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ModusWcButton,
   ModusWcIcon,
@@ -6,6 +6,7 @@ import {
 } from '@trimble-oss/moduswebcomponents-react';
 import StudioAssistantPrompt from './StudioAssistantPrompt';
 import WorkflowsPrimaryButton from '../components/WorkflowsPrimaryButton';
+import StudioTemplateCategoryFilter from './StudioTemplateCategoryFilter';
 import StudioTemplateCatalogGroups from './StudioTemplateCatalogGroups';
 import { studioTemplateGroups, type StudioTemplate } from './data';
 import type { WorkflowGenerationPhase } from './workflowGenerator';
@@ -20,7 +21,7 @@ interface StudioDashboardProps {
   generationPhase?: WorkflowGenerationPhase | null;
 }
 
-const catalogTabs = studioTemplateGroups.map((group) => ({
+const categoryOptions = studioTemplateGroups.map((group) => ({
   id: group.id,
   label: group.title,
 }));
@@ -35,11 +36,44 @@ export default function StudioDashboard({
 }: StudioDashboardProps) {
   const [templateSearchQuery, setTemplateSearchQuery] = useState('');
   const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(() => new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(studioTemplateGroups.map((group) => [group.id, true])),
+  );
 
   const filteredTemplateGroups = useMemo(
     () => filterTemplateGroups(studioTemplateGroups, templateSearchQuery, selectedGroupIds),
     [selectedGroupIds, templateSearchQuery],
   );
+
+  useEffect(() => {
+    setExpandedGroups((current) =>
+      Object.fromEntries(
+        filteredTemplateGroups.map((group) => [group.id, current[group.id] ?? true]),
+      ),
+    );
+  }, [filteredTemplateGroups]);
+
+  const isGroupExpanded = (groupId: string) => expandedGroups[groupId] ?? true;
+
+  const allGroupsExpanded = useMemo(
+    () =>
+      filteredTemplateGroups.length > 0 &&
+      filteredTemplateGroups.every((group) => isGroupExpanded(group.id)),
+    [expandedGroups, filteredTemplateGroups],
+  );
+
+  const allGroupsCollapsed = useMemo(
+    () =>
+      filteredTemplateGroups.length > 0 &&
+      filteredTemplateGroups.every((group) => !isGroupExpanded(group.id)),
+    [expandedGroups, filteredTemplateGroups],
+  );
+
+  const setAllGroupsExpanded = (expanded: boolean) => {
+    setExpandedGroups(
+      Object.fromEntries(filteredTemplateGroups.map((group) => [group.id, expanded])),
+    );
+  };
 
   const catalogGroupsKey = useMemo(() => {
     if (selectedGroupIds.size === 0) {
@@ -48,20 +82,6 @@ export default function StudioDashboard({
 
     return Array.from(selectedGroupIds).sort().join('|');
   }, [selectedGroupIds]);
-
-  const toggleGroupFilter = (groupId: string) => {
-    setSelectedGroupIds((current) => {
-      const next = new Set(current);
-
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
-
-      return next;
-    });
-  };
 
   return (
     <div className="studio-dashboard">
@@ -104,36 +124,56 @@ export default function StudioDashboard({
 
       <section className="studio-template-catalog" aria-label="Template catalog">
         <div className="studio-template-catalog-header">
-          <div className="studio-template-toolbar-search">
-            <ModusWcTextInput
-              bordered
-              includeSearch
-              placeholder="Search templates..."
-              size="md"
-              value={templateSearchQuery}
-              onInputChange={(event: CustomEvent) => {
-                setTemplateSearchQuery(event.detail?.target?.value || '');
-              }}
+          <div className="studio-template-catalog-header-main">
+            <div className="studio-template-toolbar-search">
+              <ModusWcTextInput
+                bordered
+                includeSearch
+                placeholder="Search templates..."
+                size="md"
+                value={templateSearchQuery}
+                onInputChange={(event: CustomEvent) => {
+                  setTemplateSearchQuery(event.detail?.target?.value || '');
+                }}
+              />
+            </div>
+
+            <StudioTemplateCategoryFilter
+              categories={categoryOptions}
+              selectedCategoryIds={selectedGroupIds}
+              onSelectedCategoryIdsChange={setSelectedGroupIds}
             />
           </div>
 
-          <div className="studio-template-catalog-tabs" role="group" aria-label="Template groups">
-            {catalogTabs.map((tab) => {
-              const isSelected = selectedGroupIds.has(tab.id);
-
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  aria-pressed={isSelected}
-                  className={`studio-template-catalog-tab${isSelected ? ' is-active' : ''}`}
-                  onClick={() => toggleGroupFilter(tab.id)}
+          {filteredTemplateGroups.length > 0 ? (
+            <div className="studio-template-catalog-header-controls">
+              <div className="studio-workflow-action-picker-control-links">
+                <ModusWcButton
+                  color="primary"
+                  customClass="studio-canvas-expand-all"
+                  disabled={allGroupsExpanded}
+                  onButtonClick={() => setAllGroupsExpanded(true)}
+                  size="sm"
+                  variant="borderless"
                 >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+                  Expand all
+                </ModusWcButton>
+                <span className="studio-canvas-control-separator" aria-hidden="true">
+                  |
+                </span>
+                <ModusWcButton
+                  color="primary"
+                  customClass="studio-canvas-collapse-all"
+                  disabled={allGroupsCollapsed}
+                  onButtonClick={() => setAllGroupsExpanded(false)}
+                  size="sm"
+                  variant="borderless"
+                >
+                  Collapse all
+                </ModusWcButton>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {filteredTemplateGroups.length === 0 ? (
@@ -142,6 +182,8 @@ export default function StudioDashboard({
           <StudioTemplateCatalogGroups
             key={catalogGroupsKey}
             groups={filteredTemplateGroups}
+            expandedGroups={expandedGroups}
+            onExpandedGroupsChange={setExpandedGroups}
             onUseTemplate={onUseTemplate}
           />
         )}

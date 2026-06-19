@@ -22,11 +22,7 @@ export function resolveActionProduct(item: Pick<WorkflowActionItem, 'id' | 'prov
   return null;
 }
 
-const CONNECT_TEMPLATE_GROUP_IDS = new Set([
-  'connect-model-deliverables',
-  'create-new-group',
-  'notifications-alerts',
-]);
+const CONNECT_TEMPLATE_GROUP_IDS = new Set(['connect-model-deliverables']);
 
 const PROJECTSIGHT_TEMPLATE_GROUP_IDS = new Set(['projectsight-coordination']);
 

@@ -25,11 +25,15 @@ export type StudioTemplateSource = 'pre-packaged' | 'custom' | 'shared';
 
 export type StudioTemplateCatalogTag = 'trimble' | 'project-specific';
 
+export type StudioTemplateProductKey = 'connect' | 'projectsight';
+
 export interface StudioTemplate {
   id: string;
   title: string;
   description: string;
   icons: readonly string[];
+  /** Product icons shown in the card header, e.g. Connect → ProjectSight. */
+  catalogProductFlow?: readonly StudioTemplateProductKey[];
   steps: StudioTemplateStep[];
   publisher: string;
   stepCount: number;
@@ -102,7 +106,8 @@ export const studioTemplateGroups: StudioTemplateGroup[] = [
   {
     id: 'notifications-alerts',
     title: 'Notifications & alerts',
-    subtitle: 'Pre-packaged notification templates ready to configure for your projects.',
+    subtitle:
+      'Pre-built communication frameworks designed to eliminate project blind spots by instantly routing critical system events and model updates to the right teams.',
     templates: [
       {
         id: 'bcf-email-notify',
@@ -146,12 +151,55 @@ export const studioTemplateGroups: StudioTemplateGroup[] = [
           { stepId: 'pm-send-email', label: 'Notify the admin group with a summary and next steps' },
         ],
       },
+      {
+        id: 'background-conversion-complete-notify',
+        title: 'Notify team when background file conversion completes',
+        description:
+          'Large design files can take up to 30 minutes to process into web-viewable formats. This template automatically fires an alert when background file processing is successfully finalized.',
+        icons: ['refresh', 'notifications'],
+        publisher: 'Trimble',
+        stepCount: 3,
+        teamClones: 0,
+        reclaimedTime: '~20 mins/run',
+        version: 'v1.0',
+        source: 'custom',
+        groupTitle: 'Notifications & alerts',
+        catalogTags: ['project-specific'],
+        configurationRequiredStepIds: ['starter-file-updated', 'pm-send-email'],
+        steps: [
+          { stepId: 'starter-file-updated', label: 'When background file conversion completes in Connect', isStarter: true },
+          { stepId: 'de-read-file-connect', label: 'Collect conversion details and notify recipients' },
+          { stepId: 'pm-send-email', label: 'Alert the project team that processing is finished' },
+        ],
+      },
+      {
+        id: 'workflow-failure-pipeline-alert',
+        title: 'Notify pipeline manager immediately on workflow execution failure',
+        description:
+          'Eliminates silent background failures by triggering instant, context-rich alerts with the exact node and row parameters causing the stall.',
+        icons: ['warning', 'notifications'],
+        publisher: 'Trimble',
+        stepCount: 3,
+        teamClones: 0,
+        reclaimedTime: '~45 mins/run',
+        version: 'v1.0',
+        source: 'custom',
+        groupTitle: 'Notifications & alerts',
+        catalogTags: ['project-specific'],
+        configurationRequiredStepIds: ['starter-polling-interval', 'pm-send-email'],
+        steps: [
+          { stepId: 'starter-polling-interval', label: 'When a workflow execution fails or stalls', isStarter: true },
+          { stepId: 'de-read-file-connect', label: 'Capture the failed node, loop, and row parameters' },
+          { stepId: 'pm-send-email', label: 'Notify the pipeline manager with failure context' },
+        ],
+      },
     ],
   },
   {
     id: 'create-new-group',
     title: 'Create new group',
-    subtitle: 'Pre-packaged onboarding templates ready to configure for new project setup.',
+    subtitle:
+      'Ready-to-use project templates optimized to eliminate cold-start friction and establish automated cross-product standardization.',
     templates: [
       {
         id: 'connect-projectsight-link',
@@ -159,6 +207,7 @@ export const studioTemplateGroups: StudioTemplateGroup[] = [
         description:
           'When a project is created in Trimble Connect, automatically create a matching project in ProjectSight and link them together.',
         icons: ['folder_closed', 'link'],
+        catalogProductFlow: ['connect', 'projectsight'],
         publisher: 'Trimble',
         stepCount: 3,
         teamClones: 0,
@@ -182,52 +231,66 @@ export const studioTemplateGroups: StudioTemplateGroup[] = [
     subtitle: 'Pre-packaged Connect automation templates ready to configure for model and deliverable workflows.',
     templates: [
       {
-        id: 'automated-field-points-ingest',
-        title: 'Automated Field Points Ingest (CSV ➔ TFLX)',
+        id: 'csv-tflx',
+        title: 'Convert CSV files to TFLX',
         description:
-          'Catches trade partner layouts dropped into Connect project folders, handles coordinate references, and outputs georeferenced FieldLink points.',
-        icons: ['file', 'location'],
+          'Automatically convert CSV survey uploads in Connect project folders to TFLX format for FieldLink workflows.',
+        icons: ['file', 'refresh'],
         publisher: 'Trimble',
-        stepCount: 2,
-        teamClones: 3104,
-        reclaimedTime: '~1.5 hours/run',
+        stepCount: 3,
+        teamClones: 4820,
+        reclaimedTime: '~10 mins/run',
         version: 'v1.0',
         source: 'pre-packaged',
         groupTitle: 'Trimble Connect Workflows',
         catalogTags: ['trimble'],
-        configurationRequiredStepIds: ['starter-file-created', 'de-csv-tflx'],
+        configurationRequiredStepIds: ['starter-file-created', 'de-csv-tflx', 'de-write-connect'],
         steps: [
-          { stepId: 'starter-file-created', label: 'When a trade partner CSV layout drops in Connect', isStarter: true },
-          { stepId: 'de-csv-tflx', label: 'Georeference and output FieldLink TFLX points' },
+          { stepId: 'starter-file-created', label: 'When a CSV file is uploaded to Connect', isStarter: true },
+          { stepId: 'de-csv-tflx', label: 'Convert CSV to TFLX' },
+          { stepId: 'de-write-connect', label: 'Write converted TFLX back to Connect' },
         ],
       },
       {
-        id: 'coordinated-model-slice-composer',
-        title: 'Coordinated Model Slice Composer',
+        id: 'nwd-trb',
+        title: 'Convert Navisworks NWD files to TRB',
         description:
-          'Automatically merges raw subcontractor as-built TFLX files with design NWD-derived TRB model slices for immediate SiteVision viewer walk verifications.',
-        icons: ['cube', 'layers'],
+          'Automatically convert Navisworks NWD models uploaded to Connect project folders into TRB packages for Trimble model viewer workflows.',
+        icons: ['cube', 'file'],
         publisher: 'Trimble',
-        stepCount: 5,
-        teamClones: 412,
-        reclaimedTime: '~7 hours/run',
+        stepCount: 3,
+        teamClones: 2650,
+        reclaimedTime: '~20 mins/run',
         version: 'v1.0',
         source: 'pre-packaged',
         groupTitle: 'Trimble Connect Workflows',
         catalogTags: ['trimble'],
-        configurationRequiredStepIds: [
-          'starter-file-created',
-          'de-read-file-connect',
-          'de-nwd-trb',
-          'de-merge-trb',
-          'de-write-connect',
-        ],
+        configurationRequiredStepIds: ['starter-file-created', 'de-nwd-trb', 'de-write-connect'],
         steps: [
-          { stepId: 'starter-file-created', label: 'When subcontractor as-built TFLX arrives in Connect', isStarter: true },
-          { stepId: 'de-read-file-connect', label: 'Read as-built TFLX source package' },
-          { stepId: 'de-nwd-trb', label: 'Convert design NWD slices to TRB viewer format' },
-          { stepId: 'de-merge-trb', label: 'Merge as-built TFLX with design TRB slices' },
-          { stepId: 'de-write-connect', label: 'Publish composed model for SiteVision walks' },
+          { stepId: 'starter-file-created', label: 'When an NWD file is uploaded to Connect', isStarter: true },
+          { stepId: 'de-nwd-trb', label: 'Convert NWD to TRB' },
+          { stepId: 'de-write-connect', label: 'Write converted TRB back to Connect' },
+        ],
+      },
+      {
+        id: 'merge-trb',
+        title: 'Merge TRB files in project folders',
+        description:
+          'Combine multiple TRB model files from Connect project folders into a single master deliverable for project teams.',
+        icons: ['folder_closed', 'flowchart'],
+        publisher: 'Trimble',
+        stepCount: 3,
+        teamClones: 1890,
+        reclaimedTime: '~15 mins/run',
+        version: 'v1.0',
+        source: 'pre-packaged',
+        groupTitle: 'Trimble Connect Workflows',
+        catalogTags: ['trimble'],
+        configurationRequiredStepIds: ['starter-file-created', 'de-merge-trb', 'de-write-connect'],
+        steps: [
+          { stepId: 'starter-file-created', label: 'When TRB files are added to a Connect folder', isStarter: true },
+          { stepId: 'de-merge-trb', label: 'Merge TRB files' },
+          { stepId: 'de-write-connect', label: 'Write merged TRB back to Connect' },
         ],
       },
     ],

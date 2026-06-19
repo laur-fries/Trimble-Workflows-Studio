@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   ModusWcAccordion,
-  ModusWcButton,
   ModusWcChip,
   ModusWcCollapse,
 } from '@trimble-oss/moduswebcomponents-react';
@@ -11,6 +10,8 @@ import { sortTemplates } from './studioTemplateCatalog';
 
 interface StudioTemplateCatalogGroupsProps {
   groups: StudioTemplateGroup[];
+  expandedGroups: Record<string, boolean>;
+  onExpandedGroupsChange: (expandedGroups: Record<string, boolean>) => void;
   onUseTemplate: (template: StudioTemplate) => void;
 }
 
@@ -77,60 +78,16 @@ function TemplateGroupCollapse({
 
 export default function StudioTemplateCatalogGroups({
   groups,
+  expandedGroups,
+  onExpandedGroupsChange,
   onUseTemplate,
 }: StudioTemplateCatalogGroupsProps) {
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(groups.map((group) => [group.id, true])),
-  );
-
   const visibleGroupKey = useMemo(() => groups.map((group) => group.id).join('|'), [groups]);
 
   const isGroupExpanded = (groupId: string) => expandedGroups[groupId] ?? true;
 
-  const allGroupsExpanded = useMemo(
-    () => groups.length > 0 && groups.every((group) => isGroupExpanded(group.id)),
-    [expandedGroups, groups],
-  );
-
-  const allGroupsCollapsed = useMemo(
-    () => groups.length > 0 && groups.every((group) => !isGroupExpanded(group.id)),
-    [expandedGroups, groups],
-  );
-
-  const setAllGroupsExpanded = (expanded: boolean) => {
-    setExpandedGroups(Object.fromEntries(groups.map((group) => [group.id, expanded])));
-  };
-
   return (
     <div className="studio-template-catalog-groups">
-      <div className="studio-template-catalog-groups-toolbar">
-        <div className="studio-workflow-action-picker-control-links">
-          <ModusWcButton
-            color="primary"
-            customClass="studio-canvas-expand-all"
-            disabled={allGroupsExpanded}
-            onButtonClick={() => setAllGroupsExpanded(true)}
-            size="sm"
-            variant="borderless"
-          >
-            Expand all
-          </ModusWcButton>
-          <span className="studio-canvas-control-separator" aria-hidden="true">
-            |
-          </span>
-          <ModusWcButton
-            color="primary"
-            customClass="studio-canvas-collapse-all"
-            disabled={allGroupsCollapsed}
-            onButtonClick={() => setAllGroupsExpanded(false)}
-            size="sm"
-            variant="borderless"
-          >
-            Collapse all
-          </ModusWcButton>
-        </div>
-      </div>
-
       <ModusWcAccordion
         key={`studio-template-groups-${visibleGroupKey}`}
         customClass="studio-template-groups-accordion"
@@ -141,7 +98,7 @@ export default function StudioTemplateCatalogGroups({
             group={group}
             expanded={isGroupExpanded(group.id)}
             onExpandedChange={(expanded) =>
-              setExpandedGroups((current) => ({ ...current, [group.id]: expanded }))
+              onExpandedGroupsChange({ ...expandedGroups, [group.id]: expanded })
             }
             onUseTemplate={onUseTemplate}
           />
